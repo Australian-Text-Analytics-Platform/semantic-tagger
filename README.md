@@ -9,11 +9,11 @@ In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (PO
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
 
-TBC  
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)  
 <b>Note:</b> this may take a few minutes to launch as Binder needs to install the dependencies for the tool.
 
 ## Languages
-This Semantic Tagger supports English language. For Chinese, Italian, Spanish and Portuguese, please visit [this page](https://github.sydney.edu.au/informatics/HASS-60-Semantic-Tagger/tree/other_languages) or refer to the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) for other languages.
+This Semantic Tagger supports English language. For other languages, visit the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas).
 
 ## Load the data
 <table style='margin-left: 10px'><tr>
