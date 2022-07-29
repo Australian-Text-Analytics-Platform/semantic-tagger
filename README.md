@@ -1,4 +1,4 @@
-# HASS-60: Semantic-Tagger (English)
+# Semantic-Tagger (English)
 
 ## Sydney Informatics Hub
 
@@ -12,9 +12,6 @@ This tool has been designed for use with minimal setup from users. You are able 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)  
 <b>Note:</b> this may take a few minutes to launch as Binder needs to install the dependencies for the tool.
 
-## Languages
-This Semantic Tagger supports English language. For other languages, visit the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas).
-
 ## Load the data
 <table style='margin-left: 10px'><tr>
 <td> <img width='45' src='./img/txt_icon.png'/> </td>
@@ -24,11 +21,13 @@ This Semantic Tagger supports English language. For other languages, visit the [
 
 This tagger will allow you to tag text data in a text file (or a number of text files). Alternatively, you can also tag text inside a text column inside your excel spreadsheet.
 
-
 ## Add Semantic Tags
 Once your texts have been uploaded, you can begin to add semantic tags to the texts and download the results to your computer.
 
-<img width='740' src='./img/output.png'/> 
+<img width='740' src='./img/output.png'/>  
+
+## Languages
+This Semantic Tagger supports English language. For other languages, visit the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas).
 
 ## Reference
 This code has been adapted from the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) and modified to run on a Jupyter Notebook. PyMUSAS is an open-source project that has been created and funded by the [University Centre for Computer Corpus Research on Language (UCREL)](https://ucrel.lancs.ac.uk/) at [Lancaster University](https://www.lancaster.ac.uk/). For more information about PyMUSAS, please visit [the Usage Guides page](https://ucrel.github.io/pymusas/).
