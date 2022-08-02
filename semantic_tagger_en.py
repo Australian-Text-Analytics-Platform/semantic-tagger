@@ -11,6 +11,8 @@ import hashlib
 import io
 import os
 from tqdm import tqdm
+from zipfile import ZipFile
+from pyexcelerate import Workbook
 
 # pandas: tools for data processing
 import pandas as pd
@@ -81,8 +83,8 @@ class SemanticTagger():
         
         # initiate the variables for file uploading
         self.file_uploader = widgets.FileUpload(
-            description='Upload your files (txt, csv or xlsx)',
-            accept='.txt, .xlsx, .csv ', # accepted file extension 
+            description='Upload your files (txt, csv, xlsx or zip)',
+            accept='.txt, .xlsx, .csv, .zip', # accepted file extension 
             multiple=True,  # True to accept multiple files
             error='File upload unsuccessful. Please try again!',
             layout = widgets.Layout(width='320px')
@@ -95,6 +97,9 @@ class SemanticTagger():
             with self.upload_out:
                 # clear output and give notification that file is being uploaded
                 clear_output()
+                
+                # check file size
+                self.check_file_size(self.file_uploader)
                 
                 # reading uploaded files
                 self.process_upload()
@@ -110,6 +115,23 @@ class SemanticTagger():
         # observe when file is uploaded and display output
         self.file_uploader.observe(_cb, names='data')
         self.upload_box = widgets.VBox([self.file_uploader, self.upload_out])
+    
+    
+    def check_file_size(self, file):
+        all_file_size=0
+        large_files = []
+        for key, value in file.value.items():
+            if value['metadata']['size']>1000000 and value['metadata']['name'].endswith('.txt'):
+                large_files.append(value['metadata']['name'])
+            all_file_size += value['metadata']['size']
+        
+        # display warning for large files
+        print('The total size of the upload is {:.2f} MB.'.format(all_file_size/1000000))
+        if len(large_files)>0:
+            print('The following file(s) are larger than 1MB:')
+            for name in large_files:
+                print(name)
+            print()
         
         
     def load_txt(self, value: dict) -> list:
@@ -123,6 +145,10 @@ class SemanticTagger():
         temp = {'text_name': value['metadata']['name'][:-4],
                 'text': codecs.decode(value['content'], encoding='utf-8', errors='replace')
         }
+        
+        unknown_count = temp['text'].count('�')
+        if unknown_count>0:
+            print('We identified {} unknown character(s) in the following text: {}.'.format(unknown_count, value['metadata']['name'][:-4]))
     
         return [temp]
 
@@ -150,6 +176,58 @@ class SemanticTagger():
         temp = temp_df[['text_name', 'text']].to_dict(orient='index').values()
         
         return temp
+    
+    
+    def load_zip(self, text_name, file_dir: str):
+        '''
+        Load zip file
+        
+        Args:
+            value: the file containing the text data
+        '''
+        # create an input folder if not already exist
+        os.makedirs('input', exist_ok=True)
+        
+        # read the file based on the file format
+        temp = io.BytesIO(text_name['content'])
+        
+        # opening the zip file in READ mode
+        with ZipFile(temp, 'r') as zip:
+            # extract files
+            print('Extracting files...')
+            zip.extractall('./input')
+        
+        # get the file directory
+        file_dir = ['./input/' if len([file for file in os.listdir('./input/') \
+                                       if file.endswith('.txt')])>0 \
+                    else './input/'+[file for file in os.listdir('./input/') \
+                                     if not file.endswith('MACOSX')][0]+'/'][0]
+        
+        # get file_names of unzipped texts
+        file_names = [file for file in os.listdir(file_dir) if file.endswith('txt')]
+        
+        return file_names, file_dir
+    
+    
+    def read_unzip_txt(self, zip_file: list, file_dir: str) -> list:
+        '''
+        read unzip text files
+        '''
+        print('Reading extracted files...')
+        unzip_texts = []
+        try:
+            for file in tqdm(zip_file, total=len(zip_file)):
+                with open(file_dir+file) as f:
+                    temp = {'text_name': file,
+                            'text': f.read()
+                    }
+                unzip_texts.extend([temp])
+                os.remove(file_dir+file)
+        except:
+            print('We are having problem uploading your zip file. Please refer to user guide for further detail.')
+        
+        return unzip_texts
+    
 
 
     def hash_gen(self, temp_df: pd.DataFrame) -> pd.DataFrame:
@@ -180,7 +258,10 @@ class SemanticTagger():
         print('Reading uploaded files...')
         print('This may take a while...')
         for file in tqdm(files):
-            if file.lower().endswith('txt'):
+            if file.lower().endswith('zip'):
+                file_names, file_dir = self.load_zip(self.file_uploader.value[file], file)
+                text_dic = self.read_unzip_txt(file_names, file_dir)
+            elif file.lower().endswith('txt'):
                 text_dic = self.load_txt(self.file_uploader.value[file])
             else:
                 text_dic = self.load_table(self.file_uploader.value[file], \
@@ -225,28 +306,6 @@ class SemanticTagger():
         return tagged_text_df
     
     
-    def save_to_excel(self, 
-                      tagged_text: str, 
-                      file_name: str, 
-                      sheet_name: str, 
-                      mode: str='w', 
-                      if_sheet_exists: str=None):
-        '''
-        save tagged text into an excel spreadsheet
-
-        Args:
-            tagged_text: the text with its semantic tags 
-            file_name: file name of the output excel file 
-            sheet_name: the excel sheet name for the tagged text 
-            mode: write ('w') or append ('a') mode
-            if_sheet_exists: what to do if a sheet with the same name already exists
-        '''
-        with pd.ExcelWriter(path=file_name, 
-                            mode=mode, 
-                            if_sheet_exists=if_sheet_exists) as writer:
-            tagged_text.to_excel(writer, sheet_name=sheet_name)
-            
-            
     def tag_text(self, file_name: str):
         '''
         save all tagged texts into an excel spreadsheet using text_name as the sheet name
@@ -254,18 +313,23 @@ class SemanticTagger():
         Args:
             file_name: file name of the output excel file 
         '''
+        # open excel workbook
+        wb = Workbook()
+        
+        # empty variables to check duplicate name sheets
+        sheet_names = []; n=0
+        
+        # tag texts and save to new sheets in the excel spreadsheet
         for text in tqdm(self.text_df.itertuples(), total=len(self.text_df)):
             tagged_text = self.add_tagger(text.text)
-            sheet_name = text.text_name[:15]
-            try:
-                self.save_to_excel(tagged_text, 
-                                   file_name, 
-                                   sheet_name, 
-                                   'a', 
-                                   'new')
-            except:
-                self.save_to_excel(tagged_text, 
-                                   file_name, 
-                                   sheet_name)
+            sheet_name = text.text_name[:20]
+            if sheet_name in sheet_names:
+                sheet_name += str(n)
+                n+=1
+            sheet_names.append(sheet_name)
+            values = [tagged_text.columns] + list(tagged_text.values)
+            wb.new_sheet(sheet_name, data=values)
         
+        # save the excel spreadsheet
+        wb.save(file_name)
         print('Semantic tags successfully added and saved into {}!'.format(file_name))
