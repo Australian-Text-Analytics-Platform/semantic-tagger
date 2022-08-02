@@ -323,10 +323,10 @@ class SemanticTagger():
         for text in tqdm(self.text_df.itertuples(), total=len(self.text_df)):
             tagged_text = self.add_tagger(text.text)
             sheet_name = text.text_name[:20]
-            sheet_names.append(sheet_name)
             if sheet_name in sheet_names:
                 sheet_name += str(n)
                 n+=1
+            sheet_names.append(sheet_name)
             values = [tagged_text.columns] + list(tagged_text.values)
             wb.new_sheet(sheet_name, data=values)
         
