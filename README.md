@@ -15,9 +15,12 @@ This tool has been designed for use with minimal setup from users. You are able 
 <td> <img width='45' src='./img/txt_icon.png'/> </td>
 <td> <img width='45' src='./img/xlsx_icon.png'/> </td>
 <td> <img width='45' src='./img/csv_icon.png'/> </td>
+<td> <img width='45'src='./img/zip_icon.png'/> </td>
 </tr></table>
 
 This tagger will allow you to tag text data in a text file (or a number of text files). Alternatively, you can also tag text inside a text column inside your excel spreadsheet.
+
+<b>Note:</b> If you have a large number of text files (more than 10MB in total), we suggest you compress (zip) them and upload the zip file instead. If you need assistance on how to compress your file, please check [the user guide](https://github.com/Sydney-Informatics-Hub/HASS-29_Quotation_Tool/blob/main/documents/jupyter-notebook-guide.pdf).  
 
 ## Add Semantic Tags
 Once your texts have been uploaded, you can begin to add semantic tags to the texts and download the results to your computer.
