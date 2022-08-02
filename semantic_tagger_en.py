@@ -13,6 +13,7 @@ import os
 from tqdm import tqdm
 from zipfile import ZipFile
 from pyexcelerate import Workbook
+from collections import Counter
 
 # pandas: tools for data processing
 import pandas as pd
@@ -22,6 +23,9 @@ import spacy
 import nltk
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
+
+# langdetect: tool to detect language in a text
+from langdetect import detect
 
 # ipywidgets: tools for interactive browser controls in Jupyter notebooks
 import ipywidgets as widgets
@@ -118,20 +122,38 @@ class SemanticTagger():
     
     
     def check_file_size(self, file):
-        all_file_size=0
-        large_files = []
-        for key, value in file.value.items():
-            if value['metadata']['size']>1000000 and value['metadata']['name'].endswith('.txt'):
-                large_files.append(value['metadata']['name'])
-            all_file_size += value['metadata']['size']
+        '''
+        Function to check the uploaded file size
         
-        # display warning for large files
-        print('The total size of the upload is {:.2f} MB.'.format(all_file_size/1000000))
-        if len(large_files)>0:
-            print('The following file(s) are larger than 1MB:')
-            for name in large_files:
-                print(name)
-            print()
+        Args:
+            file: the uploaded file containing the text data
+        '''
+        # check total uploaded file size
+        total_file_size = sum([i['metadata']['size'] for i in self.file_uploader.value.values()])
+        print('The total size of the upload is {:.2f} MB.'.format(total_file_size/1000000))
+        
+        # display warning for individual large files (>1MB)
+        large_text = [text['metadata']['name'] for text in self.file_uploader.value.values() \
+                      if text['metadata']['size']>1000000 and \
+                          text['metadata']['name'].endswith('.txt')]
+        if len(large_text)>0:
+            print('The following file(s) are larger than 1MB:', large_text)
+        
+        
+    def check_language(self, texts: list):
+        '''
+        Function to check the language of the text
+        
+        Args:
+            texts: list of uploaded texts
+        '''
+        # detect the number of english texts
+        english_text = ['english' if detect(text)=='en' else 'non-english' for text in texts]
+        english_count = Counter(english_text)
+        
+        # print the number of english vs non-english texts
+        print('Total number of texts in English: {}'.format(english_count['english']))
+        print('Total number of texts in other languages: {}'.format(english_count['non-english']))
         
         
     def load_txt(self, value: dict) -> list:
@@ -142,14 +164,16 @@ class SemanticTagger():
         Args:
             value: the file containing the text data
         '''
+        # read and decode uploaded text
         temp = {'text_name': value['metadata']['name'][:-4],
                 'text': codecs.decode(value['content'], encoding='utf-8', errors='replace')
         }
         
+        # check for unknown characters and display warning if any
         unknown_count = temp['text'].count('�')
         if unknown_count>0:
-            print('We identified {} unknown character(s) in the following text: {}.'.format(unknown_count, value['metadata']['name'][:-4]))
-    
+            print('We identified {} unknown character(s) in the following text: {}'.format(unknown_count, value['metadata']['name'][:-4]))
+        
         return [temp]
 
 
@@ -183,15 +207,16 @@ class SemanticTagger():
         Load zip file
         
         Args:
-            value: the file containing the text data
+            text_name: the file containing the zipped text data
+            file_dir: the directory of the zipped file
         '''
         # create an input folder if not already exist
         os.makedirs('input', exist_ok=True)
         
-        # read the file based on the file format
+        # read and decode the zip file
         temp = io.BytesIO(text_name['content'])
         
-        # opening the zip file in READ mode
+        # open and extract the zip file
         with ZipFile(temp, 'r') as zip:
             # extract files
             print('Extracting files...')
@@ -209,27 +234,35 @@ class SemanticTagger():
         return file_names, file_dir
     
     
-    def read_unzip_txt(self, zip_file: list, file_dir: str) -> list:
+    def read_unzip_txt(self, file_names: list, file_dir: str) -> list:
         '''
-        read unzip text files
+        Read the unzip text files
+        
+        Args:
+            file_names the name of the text files
+            file_dir: the directory of the zipped file
         '''
         print('Reading extracted files...')
         unzip_texts = []
         try:
-            for file in tqdm(zip_file, total=len(zip_file)):
+            # read the unzip text file
+            for file in tqdm(file_names, total=len(file_names)):
                 with open(file_dir+file) as f:
                     temp = {'text_name': file,
                             'text': f.read()
                     }
+                # store in unzip_texts
                 unzip_texts.extend([temp])
+                
+                # remove file from the directory
                 os.remove(file_dir+file)
         except:
+            # display warning if there are any issues
             print('We are having problem uploading your zip file. Please refer to user guide for further detail.')
         
         return unzip_texts
     
-
-
+    
     def hash_gen(self, temp_df: pd.DataFrame) -> pd.DataFrame:
         '''
         Create column text_id by md5 hash of the text in text_df
@@ -275,6 +308,9 @@ class SemanticTagger():
         # deduplicate the text_df by text_id
         if deduplication:
             self.text_df.drop_duplicates(subset='text_id', keep='first', inplace=True)
+            
+        # check the language in each text
+        self.check_language(list(self.text_df.text))
     
     
     def add_tagger(self, text: str) -> pd.DataFrame:
@@ -321,14 +357,17 @@ class SemanticTagger():
         
         # tag texts and save to new sheets in the excel spreadsheet
         for text in tqdm(self.text_df.itertuples(), total=len(self.text_df)):
-            tagged_text = self.add_tagger(text.text)
-            sheet_name = text.text_name[:20]
-            if sheet_name in sheet_names:
-                sheet_name += str(n)
-                n+=1
-            sheet_names.append(sheet_name)
-            values = [tagged_text.columns] + list(tagged_text.values)
-            wb.new_sheet(sheet_name, data=values)
+            try:
+                tagged_text = self.add_tagger(text.text)
+                sheet_name = text.text_name[:20]
+                if sheet_name in sheet_names:
+                    sheet_name += str(n)
+                    n+=1
+                sheet_names.append(sheet_name)
+                values = [tagged_text.columns] + list(tagged_text.values)
+                wb.new_sheet(sheet_name, data=values)
+            except:
+                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(text.text_name))
         
         # save the excel spreadsheet
         wb.save(file_name)
