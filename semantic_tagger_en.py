@@ -92,6 +92,7 @@ class SemanticTagger():
         self.tagged_df = None
         self.large_file_size = 1000000
         self.max_to_process = 50
+        self.selected_text = None
         
         # create an output folder if not already exist
         os.makedirs('output', exist_ok=True)
@@ -353,6 +354,8 @@ class SemanticTagger():
         text = re.sub('c','',text)
         text = re.sub('n','',text)
         text = re.sub('i','',text)
+        text = re.sub(r'([+])\1+', r'\1', text)
+        text = re.sub(r'([-])\1+', r'\1', text)
         
         return text
     
@@ -428,6 +431,107 @@ class SemanticTagger():
         self.tagged_df.reset_index(drop=True, inplace=True)
         
         
+    def display_tag_text(self): 
+        '''
+        Function to display tagged texts 
+        '''
+        # widgets for selecting text_name to analyse
+        enter_text, text = self.select_text_widget()
+        
+        # widget to analyse tags
+        display_button, display_out = self.click_button_widget(desc='Display tagged text',
+                                                       margin='12px 0px 0px 0px',
+                                                       width='150px')
+        
+        # widget to filter pos
+        filter_pos, select_pos = self.select_multiple_options('<b>pos:</b>',
+                                                              ['all'],
+                                                              ['all'])
+        
+        # widget to filter usas_tags
+        filter_usas, select_usas = self.select_multiple_options('<b>usas tags:</b>',
+                                                              ['all'],
+                                                              ['all'])
+        
+        # widget to filter mwe
+        filter_mwe, select_mwe = self.select_multiple_options('<b>mwe:</b>',
+                                                              ['all','yes','no'],
+                                                              ['all'])
+        
+        # function to define what happens when the button is clicked
+        def on_display_button_clicked(_):
+            # display selected tagged text
+            with display_out:
+                clear_output()
+                
+                # get selected text
+                text_name = text.value
+                
+                # display the selected text
+                df = self.tagged_df[self.tagged_df['text_name']==text_name].iloc[:,2:].reset_index(drop=True)
+                
+                # for new selected text
+                if text_name!=self.selected_text:
+                    self.selected_text=text_name
+                    
+                    # generate usas tag options
+                    usas_list = df.usas_tags_def.to_list()
+                    usas_list = [item for sublist in usas_list for item in sublist]
+                    usas_list = sorted(list(set(usas_list)))
+                    usas_list.insert(0,'all')
+                    select_usas.options = usas_list
+                    
+                    # generate pos options
+                    new_pos = sorted(list(set(df.pos.to_list())))
+                    new_pos.insert(0,'all')
+                    select_pos.options = new_pos
+                    
+                    select_pos.value=('all',)
+                    select_usas.value=('all',)
+                    select_mwe.value=('all',)
+                
+                # get the filter values
+                inc_pos = select_pos.value
+                inc_usas = select_usas.value
+                inc_mwe = select_mwe.value
+                
+                # display based on selected filter values
+                if inc_usas!=('all',):
+                    usas_index=[]
+                    for selected_usas in inc_usas:
+                        index = [n for n, item in enumerate(df.usas_tags_def.to_list()) if selected_usas in item]
+                        usas_index.extend(index)
+                    usas_index = list(set(usas_index))
+                    df = df.iloc[usas_index]
+                
+                if inc_pos!=('all',):
+                    df = df[df['pos'].isin(inc_pos)]
+                
+                if inc_mwe!=('all',):
+                    df = df[df['mwe'].isin(inc_mwe)]
+                
+                pd.set_option('display.max_rows', len(df))
+                display(df)
+                    
+        # link the button with the function
+        display_button.on_click(on_display_button_clicked)
+        
+        hbox1 = widgets.HBox([enter_text, text],
+                             layout = widgets.Layout(height='35px'))
+        hbox2 = widgets.HBox([filter_pos, select_pos],
+                             layout = widgets.Layout(width='250px'))
+        hbox3 = widgets.HBox([filter_usas, select_usas],
+                             layout = widgets.Layout(width='300px'))
+        hbox4 = widgets.HBox([filter_mwe, select_mwe],
+                             layout = widgets.Layout(width='300px'))
+        hbox5 = widgets.HBox([hbox2, hbox3, hbox4])
+        hbox6 = widgets.HBox([display_button],
+                             layout=Layout(margin='0px 0px 15px 295px'))
+        vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out])
+        
+        return vbox
+        
+        
     def save_tag_text(self, 
                       start_index: int, 
                       end_index: int):
@@ -451,7 +555,7 @@ class SemanticTagger():
         for text in tqdm(self.text_df[start_index:end_index].itertuples(), total=len(self.text_df[start_index:end_index])):
             try:
                 tagged_text = self.tagged_df[self.tagged_df['text_id']==text.text_id].iloc[:,2:]
-                sheet_name = text.text_name[:20]
+                sheet_name = text.text_name[:10]
                 if sheet_name in sheet_names:
                     sheet_name += str(n)
                     n+=1
@@ -482,26 +586,31 @@ class SemanticTagger():
         return top_ent
         
         
-    def count_entities(self, which_ent: str) -> dict:
+    def count_entities(self, which_text: str, which_ent: str) -> dict:
         '''
         Function to count the number of selected entities in the text
         
         Args:
             which_ent: the selected entity to be counted
         '''
+        if which_text=='all texts':
+            df = self.tagged_df
+        else:
+            df = self.tagged_df[self.tagged_df['text_name']==which_text].reset_index(drop=True)
+        
         # exclude punctuations
         items_to_exclude = ['PUNCT', ['PUNCT']]
         
         # count entities based on type of entities
         if which_ent=='usas_tags' or which_ent=='usas_tags_def':
             # identify usas_tags or usas_tags_def
-            ent = [item for item in sum(self.tagged_df[which_ent].to_list(), []) \
+            ent = [item for item in sum(df[which_ent].to_list(), []) \
                    if item not in items_to_exclude]
         
         elif which_ent=='mwe':
             # identify mwe indexes
-            all_mwe = set(zip(self.tagged_df[self.tagged_df['mwe']=='yes']['start_index'],\
-                              self.tagged_df[self.tagged_df['mwe']=='yes']['end_index']))
+            all_mwe = set(zip(df[df['mwe']=='yes']['start_index'],\
+                              df[df['mwe']=='yes']['end_index']))
             
             # join the mwe expressions
             ent = [' '.join([self.tagged_df.loc[i,'token'] \
@@ -509,13 +618,13 @@ class SemanticTagger():
         
         elif which_ent=='lemma' or which_ent=='pos' or which_ent=='token':
             # identify lemmas, tokens or pos tags
-            ent = [item for n, item in enumerate(self.tagged_df[which_ent].to_list()) \
-                   if self.tagged_df['pos'][n] not in items_to_exclude]
+            ent = [item for n, item in enumerate(df[which_ent].to_list()) 
+                   if df['pos'][n] not in items_to_exclude]
             
         return Counter(ent)
     
     
-    def count_text(self, which_ent, inc_ent):
+    def count_text(self, which_text: str, which_ent, inc_ent):
         '''
         Function to identify texts based on selected top entities
         
@@ -523,24 +632,30 @@ class SemanticTagger():
             which_ent: the selected entity, e.g., USAS tags, POS tags, etc.
             inc_ent: the included entity type, e.g., Z1, VERB, etc.
         '''
+        if which_text=='all texts':
+            df = self.tagged_df
+        else:
+            df = self.tagged_df[self.tagged_df['text_name']==which_text].reset_index(drop=True)
+            
         # placeholder for selected texts
         selected_texts = []
         
         # iterate over selected entities and identified tokens based on entity type
-        for n, tag in enumerate(self.tagged_df[which_ent]):
+        for n, tag in enumerate(df[which_ent]):
             if type(tag)==list:
                 for i in tag:
                     if i in inc_ent:
-                        selected_texts.append(self.tagged_df['token'][n])
+                        selected_texts.append(df['token'][n])
             else:
                 if tag in inc_ent:
-                    selected_texts.append(self.tagged_df['token'][n])
+                    selected_texts.append(df['token'][n])
                     
         return Counter(selected_texts)
     
     
     def visualize_stats(
             self, 
+            which_text: str,
             top_ent: dict,
             top_n: int,
             title: str,
@@ -578,15 +693,16 @@ class SemanticTagger():
                              range_tick), 
                        fontsize=12)
             plt.yticks(fontsize=12)
-            bar_title = 'Top {} {} in the text'.format(min(top_n,
+            bar_title = 'Top {} "{}" in text: "{}"'.format(min(top_n,
                                                            len(top_ent.keys())),
-                                                             title)
+                                                             title, 
+                                                             which_text)
             plt.title(bar_title, fontsize=14)
             plt.show()
-        
+            
         return fig, bar_title
-    
-    
+        
+        
     def analyse_tags(self):
         '''
         Function to display options for analysing entity/tag
@@ -606,6 +722,9 @@ class SemanticTagger():
         # placeholder for saving bar charts
         self.figs = []
         
+        # widgets for selecting text_name to analyse
+        choose_text, my_text = self.select_text_widget(entity=True)
+        
         # widget to select entity options
         enter_entity, select_entity = self.select_options('<b>Select entity to show:</b>',
                                                         ent_options,
@@ -617,7 +736,7 @@ class SemanticTagger():
         # widget to analyse tags
         analyse_button, analyse_out = self.click_button_widget(desc='Show top entities',
                                                        margin='20px 0px 0px 0px',
-                                                       width='180px')
+                                                       width='155px')
         
         # function to define what happens when the button is clicked
         def on_analyse_button_clicked(_):
@@ -634,15 +753,18 @@ class SemanticTagger():
                 clear_output()
                 
                 # get selected values
+                which_text=my_text.value
                 which_ent=select_entity.value
                 n=top_n.value
                 title=titles[which_ent]
                 
                 # get top entities
-                top_ent = self.top_entities(self.count_entities(which_ent), n)
+                top_ent = self.top_entities(self.count_entities(which_text, 
+                                                                which_ent), n)
                 
                 # create bar chart
-                fig, bar_title = self.visualize_stats(top_ent,
+                fig, bar_title = self.visualize_stats(which_text,
+                                                      top_ent,
                                                       n,
                                                       title,
                                                       '#2eb82e')
@@ -676,7 +798,7 @@ class SemanticTagger():
         # widget to analyse texts
         analyse_top_button, analyse_top_out = self.click_button_widget(desc='Show top words', 
                                                                        margin='20px 0px 0px 0px',
-                                                                       width='180px')
+                                                                       width='155px')
         
         # function to define what happens when the button is clicked
         def on_analyse_top_button_clicked(_):
@@ -692,6 +814,7 @@ class SemanticTagger():
                 # only create new bar chart if not 'mwe' or 'token' (already displayed)
                 if which_ent!='mwe' and which_ent!='token':
                     # get selected values
+                    which_text=my_text.value
                     clear_output()
                     inc_ent=select_text.value
                     n=top_n_text.value
@@ -699,15 +822,20 @@ class SemanticTagger():
                     # display bar chart for every selected entity type
                     for inc_ent_item in inc_ent:
                         title = inc_ent_item
-                        top_text = self.top_entities(self.count_text(which_ent, 
+                        top_text = self.top_entities(self.count_text(which_text, 
+                                                                     which_ent, 
                                                                      inc_ent_item), 
                                                      n)
                         
-                        fig, bar_title = self.visualize_stats(top_text,
-                                                              n,
-                                                              title,
-                                                              '#008ae6')
-                        self.figs.append([fig, bar_title])
+                        try:
+                            fig, bar_title = self.visualize_stats(which_text,
+                                                                  top_text,
+                                                                  n,
+                                                                  title,
+                                                                  '#008ae6')
+                            self.figs.append([fig, bar_title])
+                        except:
+                            print('Please show top entities first!')
                 else:
                     # display warning for 'mwe' or 'token'
                     with analyse_out:
@@ -719,7 +847,7 @@ class SemanticTagger():
         # widget to save the above
         save_button, save_out = self.click_button_widget(desc='Save analysis', 
                                                          margin='10px 0px 0px 0px',
-                                                         width='180px')
+                                                         width='155px')
         
         # function to define what happens when the save button is clicked
         def on_save_button_clicked(_):
@@ -745,10 +873,12 @@ class SemanticTagger():
         save_button.on_click(on_save_button_clicked)
         
         # displaying inputs, buttons and their outputs
+        hbox1 = widgets.HBox([choose_text, my_text],
+                             layout = widgets.Layout(height='35px'))
         vbox1 = widgets.VBox([enter_entity,
                               select_entity,
                               enter_n, top_n,], 
-                             layout = widgets.Layout(width='250px', height='183px'))
+                             layout = widgets.Layout(width='250px', height='151px'))
         vbox2 = widgets.VBox([analyse_button,
                               save_button], 
                              layout = widgets.Layout(width='250px', height='100px'))
@@ -759,8 +889,8 @@ class SemanticTagger():
                               analyse_top_button],
                              layout = widgets.Layout(width='350px', height='250px'))
         
-        hbox1 = widgets.HBox([vbox3, vbox4])
-        vbox = widgets.VBox([hbox1, save_out, analyse_out, analyse_top_out])
+        hbox2 = widgets.HBox([vbox3, vbox4])
+        vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out])
         
         return vbox
     
@@ -771,14 +901,14 @@ class SemanticTagger():
         '''
         # widget to display instruction
         enter_text = widgets.HTML(
-            value='<b>Select the tagged texts to save (up to {} texts):</b>'.format(self.max_to_process),
+            value='<b>Select the tagged texts to save (up to {} texts at a time):</b>'.format(self.max_to_process),
             placeholder='',
             description=''
             )
         
         # widgets for selecting the number of texts to process in each batch
         enter_start_n, start_n = self.select_n_widget('Start index:', 0)
-        enter_end_n, end_n = self.select_n_widget('End index:', 10)
+        enter_end_n, end_n = self.select_n_widget('End index:', 50)
         
         # the output after clicking the button
         text_out = widgets.Output()
@@ -802,8 +932,8 @@ class SemanticTagger():
         
         # widget to process texts
         process_button, process_out = self.click_button_widget(desc='Save tagged texts', 
-                                                       margin='20px 0px 0px 0px',
-                                                       width='180px')
+                                                       margin='10px 0px 0px 0px',
+                                                       width='160px')
         
         # function to define what happens when the top button is clicked
         def on_process_button_clicked(_):
@@ -833,13 +963,44 @@ class SemanticTagger():
         vbox1 = widgets.VBox([enter_text, 
                               enter_start_n, start_n,
                               enter_end_n, end_n], 
-                             layout = widgets.Layout(width='300px', height='160px'))
+                             layout = widgets.Layout(width='600px', height='170px'))
         vbox2 = widgets.VBox([process_button, process_out],
                              layout = widgets.Layout(width='600px'))#, height='80px'))
         
         vbox = widgets.VBox([vbox1, vbox2, text_out])
         
         return vbox
+    
+    
+    def select_text_widget(self, entity: bool=False):
+        '''
+        Create widgets for selecting text to display
+        '''
+        # widget to display instruction
+        enter_text = widgets.HTML(
+            value='<b>Select text:</b>',
+            placeholder='',
+            description=''
+            )
+        
+        # use text_name for text_options
+        text_options = self.text_df.text_name.to_list() # get the list of text_names
+        
+        # the option to select 'all texts' for analysing top entities
+        if entity:
+            text_options.insert(0, 'all texts')
+        
+        # widget to display text_options
+        text = widgets.Combobox(
+            placeholder='Choose text to display...',
+            options=text_options,
+            description='',
+            ensure_option=True,
+            disabled=False,
+            layout = widgets.Layout(width='195px')
+        )
+        
+        return enter_text, text
     
     
     def select_options(self, 
