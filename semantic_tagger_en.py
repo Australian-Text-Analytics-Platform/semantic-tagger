@@ -924,6 +924,7 @@ class SemanticTagger():
                 if (end_n.value-start_n.value)>self.max_to_process:
                     print('You can select only up to 50 texts. Please revise the start/end index.')
                 else:
+                    pd.set_option('display.max_rows', self.max_to_process)
                     display(self.text_df[start_n.value:end_n.value])
             
         # observe when file is uploaded and display output
