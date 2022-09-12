@@ -915,6 +915,7 @@ class SemanticTagger():
         
         with text_out:
             batch_size = end_n.value - start_n.value
+            pd.set_option('display.max_rows', self.max_to_process)
             display(self.text_df[start_n.value:end_n.value])
             
         # give notification when file is uploaded
