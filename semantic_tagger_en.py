@@ -365,7 +365,7 @@ class SemanticTagger():
         Function to interpret the definition of the USAS tag
 
         Args:
-            token: the USAS tag to interpret
+            token: the token containing the USAS tag to interpret
         '''
         usas_tags = token._.pymusas_tags[0].split('/')
         
@@ -373,6 +373,21 @@ class SemanticTagger():
                 if self.remove_symbols(usas_tag) in self.usas_tags.keys()\
                     else usas_tag\
                         for usas_tag in usas_tags]
+    
+    
+    def token_usas_tags(self, token) -> str:
+        '''
+        Function to add the USAS tag to the token
+
+        Args:
+            token: the token to be added with the USAS tag 
+        '''
+        try:
+            token_tag = token.text + ' (' + self.usas_tags_def(token)[0] + ', ' + self.usas_tags_def(token)[1] + ')'
+        except:
+            token_tag = token.text + ' (' + self.usas_tags_def(token)[0] + ')'
+        
+        return token_tag
     
     
     def add_tagger(self, 
@@ -398,13 +413,14 @@ class SemanticTagger():
         tagged_text = [{'text_name':text_name,
                         'text_id':text_id,
                         'token':token.text,
-                        'lemma':token.lemma_,
                         'pos':token.pos_,
+                        'usas_tags': token._.pymusas_tags[0].split('/'),
+                        'usas_tags_def': self.usas_tags_def(token),
+                        'mwe': self.check_mwe(token),
+                        'lemma':token.lemma_,
                         'start_index':(token._.pymusas_mwe_indexes[0][0]),
                         'end_index':(token._.pymusas_mwe_indexes[0][1]),
-                        'mwe': self.check_mwe(token),
-                        'usas_tags': token._.pymusas_tags[0].split('/'),
-                        'usas_tags_def': self.usas_tags_def(token)} for token in doc]
+                        'token_tag': self.token_usas_tags(token)} for token in doc]
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
