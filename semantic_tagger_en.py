@@ -86,7 +86,7 @@ class SemanticTagger():
         self.nlp = spacy.load('en_core_web_sm', exclude=exclude)
         
         # load the English PyMUSAS rule based tagger in a separate spaCy pipeline
-        #english_tagger_pipeline = spacy.load('en_dual_none_contextual') # with mwe, much slower
+        #english_tagger_pipeline = spacy.load('en_dual_none_contextual') # with mwe, but much slower
         english_tagger_pipeline = spacy.load('en_single_none_contextual') # without mwe
         
         # adds the English PyMUSAS rule based tagger to the main spaCy pipeline
