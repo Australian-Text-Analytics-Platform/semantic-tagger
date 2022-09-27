@@ -16,7 +16,6 @@ from pyexcelerate import Workbook
 from collections import Counter
 from pathlib import Path
 import re
-import joblib
 
 # pandas: tools for data processing
 import pandas as pd
@@ -99,7 +98,6 @@ class SemanticTagger():
         self.large_file_size = 1000000
         self.max_to_process = 50
         self.selected_text = None
-        self.cpu_count = joblib.cpu_count()
         
         # create an output folder if not already exist
         os.makedirs('output', exist_ok=True)
@@ -439,6 +437,32 @@ class SemanticTagger():
                         #'start_index':(token._.pymusas_mwe_indexes[0][0]),
                         #'end_index':(token._.pymusas_mwe_indexes[0][1]),
                         'token_tag': self.token_usas_tags(token)} for token in doc]
+        '''
+        tagged_text = []
+        # extract the semantic tag for each token
+        for token in doc:
+            usas_tag = token._.pymusas_tags[0].split('/')
+            usas_tag_def = self.usas_tags_def(usas_tag)
+            #start_index = token._.pymusas_mwe_indexes[0][0]
+            #end_index = token._.pymusas_mwe_indexes[0][1]
+            #mwe = self.check_mwe(start_index, end_index)
+            text = token.text
+            try:
+                token_tag = text + ' (' + usas_tag_def[0] + ', ' + usas_tag_def[1] + ')'
+            except:
+                token_tag = text + ' (' + usas_tag_def[0] + ')'
+                
+            tagged_text.append({'text_name':text_name,
+                                'text_id':text_id,
+                                'token':text,
+                                'pos':token.pos_,
+                                'usas_tags': usas_tag,
+                                'usas_tags_def': usas_tag_def,
+                                #'mwe': mwe,
+                                'lemma':token.lemma_,
+                                #'start_index':(start_index),
+                                #'end_index':(end_index),
+                                'token_tag': token_tag})'''
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
@@ -452,23 +476,62 @@ class SemanticTagger():
         '''
         # iterate over texts and tag them
         for n, doc in enumerate(tqdm(self.nlp.pipe(self.text_df['text'].to_list(),
-                                                n_process=self.cpu_count),
+                                                n_process=2),
                                   total=len(self.text_df))):
+            tagged_text = self.add_tagger(self.text_df.text_name[self.text_df.index[n]], 
+                                          self.text_df.text_id[self.text_df.index[n]], 
+                                          doc)
+            self.tagged_df = pd.concat([self.tagged_df,tagged_text])
+            
+        '''
+        for text in tqdm(self.text_df.itertuples(), total=len(self.text_df)):
+            #tagged_text = self.add_tagger(text.text_name, text.text_id, text.text)
+            #self.tagged_df = pd.concat([self.tagged_df,tagged_text])
             try:
-                text_name = self.text_df.text_name[self.text_df.index[n]]
-                text_id = self.text_df.text_id[self.text_df.index[n]]
-                tagged_text = self.add_tagger(text_name, 
-                                              text_id, 
-                                              doc)
+                # tag each uploaded text and add to pandas dataframe
+                tagged_text = self.add_tagger(text.text_name, text.text_id, text.spacy_doc)
                 self.tagged_df = pd.concat([self.tagged_df,tagged_text])
             
             except:
                 # provide warning if text is too large
-                print('{} is too large. Consider breaking it \
-                      down into smaller texts (< 1MB each file).'.format(text_name))
+                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(text.text_name))'''
         
         # reset the pandas dataframe index after adding new tagged text
         self.tagged_df.reset_index(drop=True, inplace=True)
+        '''
+        # iterate over texts and tag them
+        for n, doc in tqdm(enumerate(self.nlp.pipe(self.text_df.text, disable=['parser', 'ner'])),
+                                      total=len(self.text_df),):
+            #tagged_text = self.add_tagger(text.text_name, text.text_id, text.text)
+            #self.tagged_df = pd.concat([self.tagged_df,tagged_text])
+            try:
+                # tag each uploaded text and add to pandas dataframe
+                tagged_text = self.add_tagger(self.text_df['text_name'][self.text_df.index[n]], 
+                                              self.text_df['text_id'][self.text_df.index[n]], doc)
+                self.tagged_df = pd.concat([self.tagged_df,tagged_text])
+            
+            except:
+                # provide warning if text is too large
+                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(self.text_df['text_name'][self.text_df.index[n]]))
+        
+        # reset the pandas dataframe index after adding new tagged text
+        self.tagged_df.reset_index(drop=True, inplace=True)'''
+        '''
+        # iterate over texts and tag them
+        for text in tqdm(self.text_df.itertuples(), total=len(self.text_df)):
+            #tagged_text = self.add_tagger(text.text_name, text.text_id, text.text)
+            #self.tagged_df = pd.concat([self.tagged_df,tagged_text])
+            try:
+                # tag each uploaded text and add to pandas dataframe
+                tagged_text = self.add_tagger(text.text_name, text.text_id, text.spacy_doc)
+                self.tagged_df = pd.concat([self.tagged_df,tagged_text])
+            
+            except:
+                # provide warning if text is too large
+                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(text.text_name))
+        
+        # reset the pandas dataframe index after adding new tagged text
+        self.tagged_df.reset_index(drop=True, inplace=True)'''
         
         
     def display_tag_text(self): 
@@ -641,46 +704,12 @@ class SemanticTagger():
         # exclude punctuations
         items_to_exclude = ['PUNCT', ['PUNCT']]
         
-        import time
-        import itertools
-
-        start = time.time()
-        
-        from joblib import Parallel, delayed
-        import joblib
-        
-        number_of_cpu = joblib.cpu_count()        
         # count entities based on type of entities
         if which_ent=='usas_tags' or which_ent=='usas_tags_def':
             # identify usas_tags or usas_tags_def
-            print('Analysing text...')
-            ent = [item for item in tqdm(list(itertools.chain(*df[which_ent].to_list()))) \
+            ent = [item for item in sum(df[which_ent].to_list(), []) \
                    if item not in items_to_exclude]
-            '''
-            def yes_item(item):
-                return item
-            
-            delayed_funcs = [delayed(yes_item)(item) for item in tqdm(list(itertools.chain(*self.tagged_df[which_ent].to_list())))\
-                             if item not in items_to_exclude]
-            parallel_pool = Parallel(n_jobs=number_of_cpu)
-            
-            ent = parallel_pool(delayed_funcs)'''
         
-        elif which_ent=='lemma' or which_ent=='pos' or which_ent=='token':
-            # identify lemmas, tokens or pos tags
-            ent = [item for n, item in enumerate(df[which_ent].to_list()) 
-                   if df['pos'][n] not in items_to_exclude]
-            '''
-            def yes_item(item):
-                return item
-                
-            delayed_funcs = [delayed(yes_item)(item) for n, item in enumerate(df[which_ent].to_list())\
-                             if df['pos'][n] not in items_to_exclude]
-            parallel_pool = Parallel(n_jobs=number_of_cpu)
-            
-            ent = parallel_pool(delayed_funcs)'''
-        #print(ent)
-        '''
         elif which_ent=='mwe':
             # identify mwe indexes
             all_mwe = set(zip(df[df['mwe']=='yes']['start_index'],\
@@ -688,10 +717,13 @@ class SemanticTagger():
             
             # join the mwe expressions
             ent = [' '.join([self.tagged_df.loc[i,'token'] \
-                             for i in range(mwe[0],mwe[1])]) for mwe in all_mwe]'''
-        end = time.time()
-        #print('how long:',end-start)
-
+                             for i in range(mwe[0],mwe[1])]) for mwe in all_mwe]
+        
+        elif which_ent=='lemma' or which_ent=='pos' or which_ent=='token':
+            # identify lemmas, tokens or pos tags
+            ent = [item for n, item in enumerate(df[which_ent].to_list()) 
+                   if df['pos'][n] not in items_to_exclude]
+            
         return Counter(ent)
     
     
@@ -747,7 +779,7 @@ class SemanticTagger():
             range_tick = max(1,round(max(top_ent.values())/5))
             
             # visualize the entities using horizontal bar plot
-            fig = plt.figure(figsize=(11, max(5,display_height)))
+            fig = plt.figure(figsize=(10, max(5,display_height)))
             plt.barh(list(top_ent.keys()), 
                      list(top_ent.values()),
                      color=color)
@@ -831,8 +863,7 @@ class SemanticTagger():
                 
                 # get top entities
                 top_ent = self.top_entities(self.count_entities(which_text, 
-                                                                which_ent), 
-                                            n)
+                                                                which_ent), n)
                 
                 # create bar chart
                 fig, bar_title = self.visualize_stats(which_text,

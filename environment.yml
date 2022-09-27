@@ -20,4 +20,5 @@ dependencies:
   - pip:
       - langdetect
       - pyexcelerate
-      - https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl
+      - https://github.com/UCREL/pymusas-models/releases/download/en_single_none_contextual-0.3.1/en_single_none_contextual-0.3.1-py3-none-any.whl
+      #- https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl
