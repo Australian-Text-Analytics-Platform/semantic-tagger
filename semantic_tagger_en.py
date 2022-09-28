@@ -116,7 +116,7 @@ class SemanticTagger():
         # initiate the variables for file uploading
         self.file_uploader = widgets.FileUpload(
             description='Upload your files (txt, csv, xlsx or zip)',
-            accept='.txt, .xlsx, .csv, .zip', # accepted file extension 
+            accept='.txt, .xlsx, .csv, .zip', # accepted file extension
             multiple=True,  # True to accept multiple files
             error='File upload unsuccessful. Please try again!',
             layout = widgets.Layout(width='320px')
@@ -446,13 +446,17 @@ class SemanticTagger():
         return tagged_text_df
     
     
-    def tag_text(self): 
+    def tag_text(self):
         '''
         Function to iterate over uploaded texts and add semantic taggers to them
         '''
+        if len(self.text_df)<500:
+            n_process=1
+        else:
+            n_process=self.cpu_count
         # iterate over texts and tag them
         for n, doc in enumerate(tqdm(self.nlp.pipe(self.text_df['text'].to_list(),
-                                                n_process=self.cpu_count),
+                                                n_process=n_process),
                                   total=len(self.text_df))):
             try:
                 text_name = self.text_df.text_name[self.text_df.index[n]]
@@ -1162,7 +1166,7 @@ class SemanticTagger():
         n_option = widgets.BoundedIntText(
             value=value,
             min=0,
-            #max=len(self.text_df),
+            max=len(self.text_df),
             step=5,
             description='',
             disabled=False,
