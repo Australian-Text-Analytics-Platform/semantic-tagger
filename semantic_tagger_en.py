@@ -16,6 +16,8 @@ from pyexcelerate import Workbook
 from collections import Counter
 from pathlib import Path
 import re
+import joblib
+import warnings
 
 # pandas: tools for data processing
 import pandas as pd
@@ -77,22 +79,23 @@ class SemanticTagger():
         print('Loading spaCy language model...')
         print('This may take a while...')
         
-        # exclude 'parser' and 'ner' components as we do not need them
-        self.nlp = spacy.load('en_core_web_sm', exclude=['parser', 'ner'])
+        # Construction via spaCy pipeline
+        exclude = ['ner', 'parser', 'entity_linker', 'entity_ruler', 
+                   'morphologizer', 'sentencizer', 'transformer']
         
-        # load the English PyMUSAS rule based tagger in a separate spaCy pipeline
-        english_tagger_pipeline = spacy.load('en_dual_none_contextual')
-        
-        # adds the English PyMUSAS rule based tagger to the main spaCy pipeline
-        self.nlp.add_pipe('pymusas_rule_based_tagger', source=english_tagger_pipeline)
+        # load spacy and exclude unecessary components 
+        self.nlp = spacy.load('en_core_web_sm', exclude=exclude)
         print('Finished loading.')
         
         # initiate other necessary variables
+        self.mwe = None
+        self.mwe_count = 0
         self.text_df = None
         self.tagged_df = None
         self.large_file_size = 1000000
         self.max_to_process = 50
         self.selected_text = None
+        self.cpu_count = joblib.cpu_count()
         
         # create an output folder if not already exist
         os.makedirs('output', exist_ok=True)
@@ -100,6 +103,7 @@ class SemanticTagger():
         # get usas_tags definition
         usas_def_file = './documents/semtags_subcategories.txt'
         self.usas_tags = dict()
+        
         # reading line by line
         with open(usas_def_file) as file_x:
             for line in file_x:
@@ -108,7 +112,7 @@ class SemanticTagger():
         # initiate the variables for file uploading
         self.file_uploader = widgets.FileUpload(
             description='Upload your files (txt, csv, xlsx or zip)',
-            accept='.txt, .xlsx, .csv, .zip', # accepted file extension 
+            accept='.txt, .xlsx, .csv, .zip', # accepted file extension
             multiple=True,  # True to accept multiple files
             error='File upload unsuccessful. Please try again!',
             layout = widgets.Layout(width='320px')
@@ -139,6 +143,104 @@ class SemanticTagger():
         # observe when file is uploaded and display output
         self.file_uploader.observe(_cb, names='data')
         self.upload_box = widgets.VBox([self.file_uploader, self.upload_out])
+    
+    
+    def select_mwe(self):
+        '''
+        loading spaCy language model and PyMUSAS pipeline based on the selected mwe option
+        '''
+        if self.mwe_count==0:
+            print('Loading the semantic tagger...')
+            print('This may take a while...')
+            # load the English PyMUSAS rule based tagger in a separate spaCy pipeline
+            if self.mwe=='yes':
+                english_tagger_pipeline = spacy.load('en_dual_none_contextual') # with mwe, but much slower
+            else:
+                english_tagger_pipeline = spacy.load('en_single_none_contextual') # without mwe
+            
+            # adds the English PyMUSAS rule based tagger to the main spaCy pipeline
+            self.nlp.add_pipe('pymusas_rule_based_tagger', source=english_tagger_pipeline)
+            print('Finished loading.')
+            self.mwe_count+=1
+        else:
+            print('Please re-start the kernel if you wish to select another option (at the top, select Kernel - Restart).')
+            
+    
+    def mwe_widget(self):
+        '''
+        Create a widget to select the mwe option
+        '''
+        # widget to display instruction
+        enter_text = widgets.HTML(
+            value='Would you like to include multi-word expressions (mwe)?',
+            placeholder='',
+            description=''
+            )
+        
+        enter_text2 = widgets.HTML(
+            value = '<b><font size=2.5>Warning:</b> including mwe extraction will make the process much slower.</b>',
+            #value='<b>Warning:</b> including mwe extraction will make the process much slower.',
+            placeholder='',
+            description=''
+            )
+        
+        # select mwe
+        mwe_selection = widgets.RadioButtons(
+            options=['yes', 'no'],
+            value='yes', 
+            layout={'width': 'max-content'}, # If the items' names are long
+            description='',
+            disabled=False
+            )
+        
+        # widget to show loading button
+        mwe_button, mwe_out = self.click_button_widget(desc='Load Semantic Tagger', 
+                                                       margin='15px 0px 0px 0px',
+                                                       width='180px')
+        
+        # function to define what happens when the button is clicked
+        def on_mwe_button_clicked(_):
+            with mwe_out:
+                clear_output()
+                
+                # load selected language semantic tagger
+                self.mwe = mwe_selection.value
+                self.select_mwe()
+
+        # link the button with the function
+        mwe_button.on_click(on_mwe_button_clicked)
+        
+        vbox = widgets.VBox([enter_text, 
+                             mwe_selection, 
+                             enter_text2, 
+                             mwe_button, mwe_out])
+        
+        return vbox
+
+    
+    def click_button_widget(
+            self, 
+            desc: str, 
+            margin: str='10px 0px 0px 10px',
+            width='320px'
+            ):
+        '''
+        Create a widget to show the button to click
+        
+        Args:
+            desc: description to display on the button widget
+            margin: top, right, bottom and left margins for the button widget
+        '''
+        # widget to show the button to click
+        button = widgets.Button(description=desc, 
+                                layout=Layout(margin=margin, width=width),
+                                style=dict(font_style='italic',
+                                           font_weight='bold'))
+        
+        # the output after clicking the button
+        out = widgets.Output()
+        
+        return button, out
     
     
     def check_file_size(self, file):
@@ -270,9 +372,9 @@ class SemanticTagger():
         temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.md5(t.encode('utf-8')).hexdigest())
         
         return temp_df
-
-
-    def process_upload(self, deduplication: bool = True):    
+    
+    
+    def process_upload(self, deduplication: bool = True):
         '''
         Pre-process uploaded .txt files into pandas dataframe
 
@@ -325,11 +427,26 @@ class SemanticTagger():
         if deduplication:
             self.text_df.drop_duplicates(subset='text_id', keep='first', inplace=True)
         
-        # check the language in each text
-        #self.check_language(list(self.text_df.text))
-    
+        def clean_text(text):
+            '''
+            Function to get spaCy text
+
+            Args:
+                text: the text to be processed by spaCy
+            '''
+            # clean empty spaces in the text
+            text = sent_tokenize(text)
+            text = ' '.join(text)
+            
+            return text
+        
+        print('Pre-processing uploaded text...')
+        tqdm.pandas()
+        self.text_df['text'] = self.text_df['text'].progress_apply(clean_text)
+        
     
     def check_mwe(self, token) -> str:
+    #def check_mwe(self, start_index, end_index) -> str:
         '''
         Function to check if a token is part of multi-word expressions
 
@@ -338,6 +455,7 @@ class SemanticTagger():
         '''
         return ['yes' if (token._.pymusas_mwe_indexes[0][1]-\
                          token._.pymusas_mwe_indexes[0][0])>1 else 'no'][0]
+        #return ['yes' if (end_index-start_index)>1 else 'no'][0]
     
     
     def remove_symbols(self, text: str) -> str:
@@ -393,34 +511,39 @@ class SemanticTagger():
     def add_tagger(self, 
                    text_name: str, 
                    text_id:str, 
-                   text: str) -> pd.DataFrame:
+                   doc) -> pd.DataFrame:
+                   #text: str) -> pd.DataFrame:
         '''
         add semantic tags to the texts and convert into pandas dataframe
 
         Args:
             text_name: the text_name of the text to be tagged by the semantic tagger
-            text: the text_id of the text to be tagged by the semantic tagger
+            text_id: the text_id of the text to be tagged by the semantic tagger
             text: the text to be tagged by the semantic tagger
         '''
-        # clean empty spaces in the text
-        text = sent_tokenize(text)
-        text = ' '.join(text)
-        
-        # apply spacy language model to the text
-        doc = self.nlp(text)
-        
-        # extract the semantic tag for each token
-        tagged_text = [{'text_name':text_name,
-                        'text_id':text_id,
-                        'token':token.text,
-                        'pos':token.pos_,
-                        'usas_tags': token._.pymusas_tags[0].split('/'),
-                        'usas_tags_def': self.usas_tags_def(token),
-                        'mwe': self.check_mwe(token),
-                        'lemma':token.lemma_,
-                        'start_index':(token._.pymusas_mwe_indexes[0][0]),
-                        'end_index':(token._.pymusas_mwe_indexes[0][1]),
-                        'token_tag': self.token_usas_tags(token)} for token in doc]
+        if self.mwe=='yes':
+            # extract the semantic tag for each token
+            tagged_text = [{'text_name':text_name,
+                            'text_id':text_id,
+                            'token':token.text,
+                            'pos':token.pos_,
+                            'usas_tags': token._.pymusas_tags[0].split('/'),
+                            'usas_tags_def': self.usas_tags_def(token),
+                            'mwe': self.check_mwe(token),
+                            'lemma':token.lemma_,
+                            'start_index':(token._.pymusas_mwe_indexes[0][0]),
+                            'end_index':(token._.pymusas_mwe_indexes[0][1]),
+                            'token_tag': self.token_usas_tags(token)} for token in doc]
+        else:
+            # extract the semantic tag for each token
+            tagged_text = [{'text_name':text_name,
+                            'text_id':text_id,
+                            'token':token.text,
+                            'pos':token.pos_,
+                            'usas_tags': token._.pymusas_tags[0].split('/'),
+                            'usas_tags_def': self.usas_tags_def(token),
+                            'lemma':token.lemma_,
+                            'token_tag': self.token_usas_tags(token)} for token in doc]
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
@@ -428,20 +551,33 @@ class SemanticTagger():
         return tagged_text_df
     
     
-    def tag_text(self): 
+    def tag_text(self):
         '''
         Function to iterate over uploaded texts and add semantic taggers to them
         '''
+        if self.mwe=='no':
+            if len(self.text_df)<500:
+                n_process=1
+            else:
+                n_process=self.cpu_count
+        else:
+            n_process=1
         # iterate over texts and tag them
-        for text in tqdm(self.text_df.itertuples(), total=len(self.text_df)):
+        for n, doc in enumerate(tqdm(self.nlp.pipe(self.text_df['text'].to_list(),
+                                                n_process=n_process),
+                                  total=len(self.text_df))):
             try:
-                # tag each uploaded text and add to pandas dataframe
-                tagged_text = self.add_tagger(text.text_name, text.text_id, text.text)
+                text_name = self.text_df.text_name[self.text_df.index[n]]
+                text_id = self.text_df.text_id[self.text_df.index[n]]
+                tagged_text = self.add_tagger(text_name, 
+                                              text_id, 
+                                              doc)
                 self.tagged_df = pd.concat([self.tagged_df,tagged_text])
             
             except:
                 # provide warning if text is too large
-                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(text.text_name))
+                print('{} is too large. Consider breaking it \
+                      down into smaller texts (< 1MB each file).'.format(text_name))
         
         # reset the pandas dataframe index after adding new tagged text
         self.tagged_df.reset_index(drop=True, inplace=True)
@@ -538,9 +674,12 @@ class SemanticTagger():
                              layout = widgets.Layout(width='250px'))
         hbox3 = widgets.HBox([filter_usas, select_usas],
                              layout = widgets.Layout(width='300px'))
-        hbox4 = widgets.HBox([filter_mwe, select_mwe],
-                             layout = widgets.Layout(width='300px'))
-        hbox5 = widgets.HBox([hbox2, hbox3, hbox4])
+        if self.mwe=='yes':
+            hbox4 = widgets.HBox([filter_mwe, select_mwe],
+                                 layout = widgets.Layout(width='300px'))
+            hbox5 = widgets.HBox([hbox2, hbox3, hbox4])
+        else:
+            hbox5 = widgets.HBox([hbox2, hbox3])#, hbox4])
         hbox6 = widgets.HBox([display_button],
                              layout=Layout(margin='0px 0px 15px 295px'))
         vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out])
@@ -617,12 +756,21 @@ class SemanticTagger():
         # exclude punctuations
         items_to_exclude = ['PUNCT', ['PUNCT']]
         
+        import itertools
+
+        number_of_cpu = joblib.cpu_count()        
         # count entities based on type of entities
         if which_ent=='usas_tags' or which_ent=='usas_tags_def':
             # identify usas_tags or usas_tags_def
-            ent = [item for item in sum(df[which_ent].to_list(), []) \
+            print('Analysing text...')
+            ent = [item for item in tqdm(list(itertools.chain(*df[which_ent].to_list()))) \
                    if item not in items_to_exclude]
-        
+            
+        elif which_ent=='lemma' or which_ent=='pos' or which_ent=='token':
+            # identify lemmas, tokens or pos tags
+            ent = [item for n, item in enumerate(df[which_ent].to_list()) 
+                   if df['pos'][n] not in items_to_exclude]
+            
         elif which_ent=='mwe':
             # identify mwe indexes
             all_mwe = set(zip(df[df['mwe']=='yes']['start_index'],\
@@ -632,11 +780,6 @@ class SemanticTagger():
             ent = [' '.join([self.tagged_df.loc[i,'token'] \
                              for i in range(mwe[0],mwe[1])]) for mwe in all_mwe]
         
-        elif which_ent=='lemma' or which_ent=='pos' or which_ent=='token':
-            # identify lemmas, tokens or pos tags
-            ent = [item for n, item in enumerate(df[which_ent].to_list()) 
-                   if df['pos'][n] not in items_to_exclude]
-            
         return Counter(ent)
     
     
@@ -673,6 +816,7 @@ class SemanticTagger():
             self, 
             which_text: str,
             top_ent: dict,
+            sum_ent: int,
             top_n: int,
             title: str,
             color: str
@@ -701,11 +845,11 @@ class SemanticTagger():
             for i, v in enumerate(list(top_ent.values())):
                 plt.text(v+(len(str(v))*0.05), 
                          i, 
-                         str(v), 
+                         '  {} ({:.0f}%)'.format(v,100*v/sum_ent), 
                          fontsize=12)
             
             # specify xticks, yticks and title
-            plt.xticks(range(0, max(top_ent.values())+range_tick, 
+            plt.xticks(range(0, max(top_ent.values())+int(2*range_tick), 
                              range_tick), 
                        fontsize=12)
             plt.yticks(fontsize=12)
@@ -726,14 +870,17 @@ class SemanticTagger():
         # options for bar chart titles
         titles = {'usas_tags': 'USAS tags',
                   'usas_tags_def': 'USAS tag definitions',
-                  'mwe': 'Multi-Word Expressions',
                   'pos': 'Part-of-Speech Tags',
                   'lemma': 'lemmas',
                   'token': 'tokens'}
         
         # entity options
-        ent_options = ['usas_tags_def', 'usas_tags', 'mwe',
+        ent_options = ['usas_tags_def', 'usas_tags', 
                        'pos', 'lemma', 'token']
+        
+        if self.mwe=='yes':
+            titles['mwe']='Multi-Word Expressions'
+            ent_options.append('mwe')
         
         # placeholder for saving bar charts
         self.figs = []
@@ -775,12 +922,14 @@ class SemanticTagger():
                 title=titles[which_ent]
                 
                 # get top entities
-                top_ent = self.top_entities(self.count_entities(which_text, 
-                                                                which_ent), n)
+                count_ent = self.count_entities(which_text, which_ent)
+                sum_ent = sum(count_ent.values())
+                top_ent = self.top_entities(count_ent, n)
                 
                 # create bar chart
                 fig, bar_title = self.visualize_stats(which_text,
                                                       top_ent,
+                                                      sum_ent,
                                                       n,
                                                       title,
                                                       '#2eb82e')
@@ -790,6 +939,7 @@ class SemanticTagger():
                 
                 # update options for displaying tokens in entity type
                 if which_ent!='mwe' and which_ent!='token':
+                #if which_ent!='token':
                     new_options = list(top_ent.keys())
                     new_options.reverse()
                     select_text.options = new_options
@@ -829,6 +979,7 @@ class SemanticTagger():
                 
                 # only create new bar chart if not 'mwe' or 'token' (already displayed)
                 if which_ent!='mwe' and which_ent!='token':
+                #if which_ent!='token':
                     # get selected values
                     which_text=my_text.value
                     clear_output()
@@ -838,14 +989,14 @@ class SemanticTagger():
                     # display bar chart for every selected entity type
                     for inc_ent_item in inc_ent:
                         title = inc_ent_item
-                        top_text = self.top_entities(self.count_text(which_text, 
-                                                                     which_ent, 
-                                                                     inc_ent_item), 
-                                                     n)
+                        count_ent = self.count_text(which_text, which_ent, inc_ent_item)
+                        sum_ent = sum(count_ent.values())
+                        top_text = self.top_entities(count_ent, n)
                         
                         try:
                             fig, bar_title = self.visualize_stats(which_text,
                                                                   top_text,
+                                                                  sum_ent,
                                                                   n,
                                                                   title,
                                                                   '#008ae6')
@@ -1104,7 +1255,7 @@ class SemanticTagger():
         n_option = widgets.BoundedIntText(
             value=value,
             min=0,
-            #max=len(self.text_df),
+            max=len(self.text_df),
             step=5,
             description='',
             disabled=False,
