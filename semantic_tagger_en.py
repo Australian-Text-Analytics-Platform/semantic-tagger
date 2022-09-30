@@ -163,6 +163,7 @@ class SemanticTagger():
             print('Finished loading.')
             self.mwe_count+=1
         else:
+            print('\nSemantic tagger has been loaded and ready for use.')
             print('Please re-start the kernel if you wish to select another option (at the top, select Kernel - Restart).')
             
     
@@ -206,7 +207,16 @@ class SemanticTagger():
                 # load selected language semantic tagger
                 self.mwe = mwe_selection.value
                 self.select_mwe()
-
+                
+                if self.mwe=='no':
+                    enter_text.value = 'Semantic tagger without MWE extraction has been loaded and ready for use.'
+                    enter_text2.value=''
+                    mwe_selection.options=['no']
+                else:
+                    enter_text.value = 'Semantic tagger with MWE extraction has been loaded and ready for use.'
+                    mwe_selection.options=['yes']
+                
+                
         # link the button with the function
         mwe_button.on_click(on_mwe_button_clicked)
         
