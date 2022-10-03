@@ -369,7 +369,7 @@
 #  
 #  Note: max_body_size is applied even in streaming mode.
 #  Default: 536870912
-c.NotebookApp.max_body_size = GEF_gene_sentiment_analysis.ipynb #536870912
+# c.NotebookApp.max_body_size = 536870912
 
 ## Gets or sets the maximum amount of memory, in bytes, that is allocated for use
 #  by the buffer manager.
