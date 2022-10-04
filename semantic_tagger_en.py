@@ -37,7 +37,7 @@ from langdetect import detect
 # ipywidgets: tools for interactive browser controls in Jupyter notebooks
 import ipywidgets as widgets
 from ipywidgets import Layout
-from IPython.display import display, clear_output, FileLink
+from IPython.display import display, clear_output, FileLink, HTML
 
 class DownloadFileLink(FileLink):
     '''
@@ -81,7 +81,7 @@ class SemanticTagger():
         
         # Construction via spaCy pipeline
         exclude = ['ner', 'parser', 'entity_linker', 'entity_ruler', 
-                   'morphologizer', 'sentencizer', 'transformer']
+                   'morphologizer', 'transformer']
         
         # load spacy and exclude unecessary components 
         self.nlp = spacy.load('en_core_web_sm', exclude=exclude)
@@ -94,8 +94,10 @@ class SemanticTagger():
         self.tagged_df = None
         self.large_file_size = 1000000
         self.max_to_process = 50
-        self.selected_text = None
         self.cpu_count = joblib.cpu_count()
+        self.selected_text = {'left': None, 'right': None}
+        self.text_name = {'left': None, 'right': None}
+        self.df = {'left': None, 'right': None}
         
         # create an output folder if not already exist
         os.makedirs('output', exist_ok=True)
@@ -143,6 +145,43 @@ class SemanticTagger():
         # observe when file is uploaded and display output
         self.file_uploader.observe(_cb, names='data')
         self.upload_box = widgets.VBox([self.file_uploader, self.upload_out])
+        
+        # CSS styling 
+        self.style = """
+        <style scoped>
+            .dataframe-div {
+              max-height: 350px;
+              overflow: auto;
+              position: relative;
+            }
+        
+            .dataframe thead th {
+              position: -webkit-sticky; /* for Safari */
+              position: sticky;
+              top: 0;
+              background: #2ca25f;
+              color: white;
+            }
+        
+            .dataframe thead th:first-child {
+              left: 0;
+              z-index: 1;
+            }
+        
+            .dataframe tbody tr th:only-of-type {
+                    vertical-align: middle;
+                }
+        
+            .dataframe tbody tr th {
+              position: -webkit-sticky; /* for Safari */
+              position: sticky;
+              left: 0;
+              background: #99d8c9;
+              color: white;
+              vertical-align: top;
+            }
+        </style>
+        """
     
     
     def select_mwe(self):
@@ -160,6 +199,7 @@ class SemanticTagger():
             
             # adds the English PyMUSAS rule based tagger to the main spaCy pipeline
             self.nlp.add_pipe('pymusas_rule_based_tagger', source=english_tagger_pipeline)
+            self.nlp.add_pipe('sentencizer')
             print('Finished loading.')
             self.mwe_count+=1
         else:
@@ -519,7 +559,7 @@ class SemanticTagger():
     
     
     def add_tagger(self, 
-                   text_name: str, 
+                   text_name: str,
                    text_id:str, 
                    doc) -> pd.DataFrame:
                    #text: str) -> pd.DataFrame:
@@ -541,9 +581,10 @@ class SemanticTagger():
                             'usas_tags_def': self.usas_tags_def(token),
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
-                            'start_index':(token._.pymusas_mwe_indexes[0][0]),
-                            'end_index':(token._.pymusas_mwe_indexes[0][1]),
-                            'token_tag': self.token_usas_tags(token)} for token in doc]
+                            #'start_index':(token._.pymusas_mwe_indexes[0][0]),
+                            #'end_index':(token._.pymusas_mwe_indexes[0][1]),
+                            #'token_tag': self.token_usas_tags(token),
+                            'sentence':str(token.sent)} for token in doc]
         else:
             # extract the semantic tag for each token
             tagged_text = [{'text_name':text_name,
@@ -553,7 +594,8 @@ class SemanticTagger():
                             'usas_tags': token._.pymusas_tags[0].split('/'),
                             'usas_tags_def': self.usas_tags_def(token),
                             'lemma':token.lemma_,
-                            'token_tag': self.token_usas_tags(token)} for token in doc]
+                            #'token_tag': self.token_usas_tags(token),
+                            'sentence':str(token.sent)} for token in doc]
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
@@ -593,7 +635,7 @@ class SemanticTagger():
         self.tagged_df.reset_index(drop=True, inplace=True)
         
         
-    def display_tag_text(self): 
+    def display_tag_text(self, left_right: str): 
         '''
         Function to display tagged texts 
         '''
@@ -611,7 +653,7 @@ class SemanticTagger():
                                                               ['all'])
         
         # widget to filter usas_tags
-        filter_usas, select_usas = self.select_multiple_options('<b>usas tags:</b>',
+        filter_usas, select_usas = self.select_multiple_options('<b>usas tag:</b>',
                                                               ['all'],
                                                               ['all'])
         
@@ -627,24 +669,24 @@ class SemanticTagger():
                 clear_output()
                 
                 # get selected text
-                text_name = text.value
+                self.text_name[left_right] = text.value
                 
                 # display the selected text
-                df = self.tagged_df[self.tagged_df['text_name']==text_name].iloc[:,2:].reset_index(drop=True)
+                self.df[left_right] = self.tagged_df[self.tagged_df['text_name']==self.text_name[left_right]].iloc[:,2:].reset_index(drop=True)
                 
                 # for new selected text
-                if text_name!=self.selected_text:
-                    self.selected_text=text_name
+                if self.text_name[left_right]!=self.selected_text[left_right]:
+                    self.selected_text[left_right]=self.text_name[left_right]
                     
                     # generate usas tag options
-                    usas_list = df.usas_tags_def.to_list()
+                    usas_list = self.df[left_right].usas_tags_def.to_list()
                     usas_list = [item for sublist in usas_list for item in sublist]
                     usas_list = sorted(list(set(usas_list)))
                     usas_list.insert(0,'all')
                     select_usas.options = usas_list
                     
                     # generate pos options
-                    new_pos = sorted(list(set(df.pos.to_list())))
+                    new_pos = sorted(list(set(self.df[left_right].pos.to_list())))
                     new_pos.insert(0,'all')
                     select_pos.options = new_pos
                     
@@ -661,19 +703,32 @@ class SemanticTagger():
                 if inc_usas!=('all',):
                     usas_index=[]
                     for selected_usas in inc_usas:
-                        index = [n for n, item in enumerate(df.usas_tags_def.to_list()) if selected_usas in item]
+                        index = [n for n, item in enumerate(self.df[left_right].usas_tags_def.to_list()) if selected_usas in item]
                         usas_index.extend(index)
                     usas_index = list(set(usas_index))
-                    df = df.iloc[usas_index]
+                    self.df[left_right] = self.df[left_right].iloc[usas_index]
                 
                 if inc_pos!=('all',):
-                    df = df[df['pos'].isin(inc_pos)]
+                    self.df[left_right] = self.df[left_right][self.df[left_right]['pos'].isin(inc_pos)]
                 
                 if inc_mwe!=('all',):
-                    df = df[df['mwe'].isin(inc_mwe)]
+                    self.df[left_right] = self.df[left_right][self.df[left_right]['mwe'].isin(inc_mwe)]
                 
-                pd.set_option('display.max_rows', len(df))
-                display(df)
+                pd.set_option('display.max_rows', None) #len(self.df[left_right]))
+                #pd.set_option('display.max_colwidth', None)
+                
+                # display in html format for styling purpose
+                df_html = self.df[left_right].to_html()
+                
+                # Concatenating to single string
+                df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
+                
+                print('Text name: {}'.format(self.text_name[left_right]))
+                display(HTML(df_html))
+                pd.options.display.max_colwidth = 50
+                
+                # Puts the scrollbar next to the DataFrame
+
                     
         # link the button with the function
         display_button.on_click(on_display_button_clicked)
@@ -681,18 +736,39 @@ class SemanticTagger():
         hbox1 = widgets.HBox([enter_text, text],
                              layout = widgets.Layout(height='35px'))
         hbox2 = widgets.HBox([filter_pos, select_pos],
-                             layout = widgets.Layout(width='250px'))
+                             layout = widgets.Layout(width='250px',
+                                                     margin='0px 0px 0px 43px'))
         hbox3 = widgets.HBox([filter_usas, select_usas],
-                             layout = widgets.Layout(width='300px'))
+                             layout = widgets.Layout(width='300px',
+                                                     margin='0px 0px 0px 13px'))
         if self.mwe=='yes':
             hbox4 = widgets.HBox([filter_mwe, select_mwe],
-                                 layout = widgets.Layout(width='300px'))
-            hbox5 = widgets.HBox([hbox2, hbox3, hbox4])
+                                 layout = widgets.Layout(width='300px',
+                                                         margin='0px 0px 0px 36px'))
+            hbox5a = widgets.HBox([hbox2, hbox3])
+            hbox5 = widgets.VBox([hbox5a, hbox4])
         else:
-            hbox5 = widgets.HBox([hbox2, hbox3])#, hbox4])
+            hbox5 = widgets.HBox([hbox2, hbox3])
         hbox6 = widgets.HBox([display_button],
-                             layout=Layout(margin='0px 0px 15px 295px'))
-        vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out])
+                             layout=Layout(margin= '0px 0px 10px 75px'))
+        #vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out],
+        #                     layout = widgets.Layout(width='500px'))
+        vbox = widgets.VBox([hbox1, hbox5, hbox6],
+                             layout = widgets.Layout(width='500px'))
+        
+        return vbox, display_out
+    
+    
+    def display_two_tag_texts(self): 
+        '''
+        Function to display tagged texts commparison 
+        '''
+        # widget for displaying first text
+        vbox1, display_out1 = self.display_tag_text('left')
+        vbox2, display_out2 = self.display_tag_text('right')
+        
+        hbox = widgets.HBox([vbox1, vbox2])
+        vbox = widgets.VBox([hbox, display_out1, display_out2])
         
         return vbox
         
@@ -885,7 +961,7 @@ class SemanticTagger():
                   'token': 'tokens'}
         
         # entity options
-        ent_options = ['usas_tags_def', 'usas_tags', 
+        ent_options = ['usas_tags_def', #'usas_tags', 
                        'pos', 'lemma', 'token']
         
         if self.mwe=='yes':
@@ -1093,6 +1169,8 @@ class SemanticTagger():
         with text_out:
             batch_size = end_n.value - start_n.value
             pd.set_option('display.max_rows', self.max_to_process)
+            
+            # display texts to be saved
             display(self.text_df[start_n.value:end_n.value])
             
         # give notification when file is uploaded
@@ -1265,7 +1343,7 @@ class SemanticTagger():
         n_option = widgets.BoundedIntText(
             value=value,
             min=0,
-            max=len(self.text_df),
+            #max=len(self.text_df),
             step=5,
             description='',
             disabled=False,
