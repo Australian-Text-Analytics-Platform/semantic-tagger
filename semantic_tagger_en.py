@@ -703,7 +703,7 @@ class SemanticTagger():
         hbox6 = widgets.HBox([display_button],
                              layout=Layout(margin='0px 0px 10px 75px'))
         vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out],
-                             layout = widgets.Layout(width='500px'))
+                             layout = widgets.Layout(width='500px', overflow='auto'))
         
         return vbox
     
