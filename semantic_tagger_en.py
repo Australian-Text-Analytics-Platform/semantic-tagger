@@ -37,7 +37,7 @@ from langdetect import detect
 # ipywidgets: tools for interactive browser controls in Jupyter notebooks
 import ipywidgets as widgets
 from ipywidgets import Layout
-from IPython.display import display, clear_output, FileLink
+from IPython.display import display, clear_output, FileLink, HTML
 
 class DownloadFileLink(FileLink):
     '''
@@ -540,13 +540,13 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            'usas_tags': token._.pymusas_tags[0].split('/'),
+                            #'usas_tags': token._.pymusas_tags[0].split('/'),
                             'usas_tags_def': self.usas_tags_def(token),
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
-                            'start_index':(token._.pymusas_mwe_indexes[0][0]),
-                            'end_index':(token._.pymusas_mwe_indexes[0][1]),
-                            'token_tag': self.token_usas_tags(token),
+                            #'start_index':(token._.pymusas_mwe_indexes[0][0]),
+                            #'end_index':(token._.pymusas_mwe_indexes[0][1]),
+                            #'token_tag': self.token_usas_tags(token),
                             'sentence':str(token.sent)} for token in doc]
         else:
             # extract the semantic tag for each token
@@ -554,10 +554,10 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            'usas_tags': token._.pymusas_tags[0].split('/'),
+                            #'usas_tags': token._.pymusas_tags[0].split('/'),
                             'usas_tags_def': self.usas_tags_def(token),
                             'lemma':token.lemma_,
-                            'token_tag': self.token_usas_tags(token),
+                            #'token_tag': self.token_usas_tags(token),
                             'sentence':str(token.sent)} for token in doc]
         
         # convert output into pandas dataframe
@@ -679,8 +679,15 @@ class SemanticTagger():
                 
                 pd.set_option('display.max_rows', None) #len(self.df[left_right]))
                 pd.set_option('display.max_colwidth', None)
-                display(self.df[left_right])
+                warnings.filterwarnings("ignore")
+                #display(self.df[left_right].style)
+                #display(self.df[left_right])
+                self.df[left_right].style.set_sticky(axis="index")
+                display(HTML("<div headers:True; style='height: 480px; overflow: auto; width: '480px'>" + self.df[left_right].to_html() + "</div>"))
                 pd.options.display.max_colwidth = 50
+                
+                # Puts the scrollbar next to the DataFrame
+
                     
         # link the button with the function
         display_button.on_click(on_display_button_clicked)
@@ -701,9 +708,9 @@ class SemanticTagger():
         else:
             hbox5 = widgets.HBox([hbox2, hbox3])
         hbox6 = widgets.HBox([display_button],
-                             layout=Layout(margin='0px 0px 10px 75px'))
+                             layout=Layout(margin= '0px 0px 10px 75px'))
         vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out],
-                             layout = widgets.Layout(width='500px', overflow='auto'))
+                             layout = widgets.Layout(width='500px'))
         
         return vbox
     
@@ -909,7 +916,7 @@ class SemanticTagger():
                   'token': 'tokens'}
         
         # entity options
-        ent_options = ['usas_tags_def', 'usas_tags', 
+        ent_options = ['usas_tags_def', #'usas_tags', 
                        'pos', 'lemma', 'token']
         
         if self.mwe=='yes':
