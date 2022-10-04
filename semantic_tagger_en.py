@@ -559,7 +559,7 @@ class SemanticTagger():
     
     
     def add_tagger(self, 
-                   text_name: str, 
+                   text_name: str
                    text_id:str, 
                    doc) -> pd.DataFrame:
                    #text: str) -> pd.DataFrame:
