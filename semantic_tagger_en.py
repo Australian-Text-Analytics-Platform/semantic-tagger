@@ -1030,7 +1030,7 @@ class SemanticTagger():
                     new_options.reverse()
                     select_text.options = new_options
                     select_text.value = [new_options[0]]
-                    enter_text.value = '<b>Select {} to analyse:</b>'.format(titles[which_ent][:-1])
+                    enter_text.value = '<b>Select {}:</b>'.format(titles[which_ent][:-1])
                 else:
                     select_text.options = ['None']
                     select_text.value = ['None']
@@ -1040,7 +1040,7 @@ class SemanticTagger():
         analyse_button.on_click(on_analyse_button_clicked)
         
         # widget to select top entity type and display top tokens
-        enter_text, select_text = self.select_multiple_options('<b>Select tag/lemma/token to analyse:</b>',
+        enter_text, select_text = self.select_multiple_options('<b>Select tag/lemma/token:</b>',
                                                                ['None'],
                                                                ['None'])
         
@@ -1049,7 +1049,7 @@ class SemanticTagger():
         
         # widget to analyse texts
         analyse_top_button, analyse_top_out = self.click_button_widget(desc='Show top words', 
-                                                                       margin='20px 0px 0px 0px',
+                                                                       margin='12px 0px 0px 0px',
                                                                        width='155px')
         
         # function to define what happens when the button is clicked
@@ -1140,13 +1140,26 @@ class SemanticTagger():
                               select_text, 
                               enter_n_text, top_n_text,
                               analyse_top_button],
-                             layout = widgets.Layout(width='350px', height='250px'))
+                             layout = widgets.Layout(width='250px', height='250px'))
         
         hbox2 = widgets.HBox([vbox3, vbox4])
-        vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out])
+        vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
+                            layout = widgets.Layout(width='500px'))
         
         return vbox
     
+    
+    def analyse_two_tags(self):
+        '''
+        Function to display options for comparing text analysis
+        '''
+        vbox1 = self.analyse_tags()
+        vbox2 = self.analyse_tags()
+        
+        hbox = widgets.HBox([vbox1, vbox2])
+        
+        return hbox
+        
     
     def save_options(self):
         '''
