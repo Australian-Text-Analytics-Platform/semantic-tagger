@@ -145,6 +145,43 @@ class SemanticTagger():
         # observe when file is uploaded and display output
         self.file_uploader.observe(_cb, names='data')
         self.upload_box = widgets.VBox([self.file_uploader, self.upload_out])
+        
+        # CSS styling 
+        self.style = """
+        <style scoped>
+            .dataframe-div {
+              max-height: 350px;
+              overflow: auto;
+              position: relative;
+            }
+        
+            .dataframe thead th {
+              position: -webkit-sticky; /* for Safari */
+              position: sticky;
+              top: 0;
+              background: #2ca25f;
+              color: white;
+            }
+        
+            .dataframe thead th:first-child {
+              left: 0;
+              z-index: 1;
+            }
+        
+            .dataframe tbody tr th:only-of-type {
+                    vertical-align: middle;
+                }
+        
+            .dataframe tbody tr th {
+              position: -webkit-sticky; /* for Safari */
+              position: sticky;
+              left: 0;
+              background: #99d8c9;
+              color: white;
+              vertical-align: top;
+            }
+        </style>
+        """
     
     
     def select_mwe(self):
@@ -540,7 +577,7 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            #'usas_tags': token._.pymusas_tags[0].split('/'),
+                            'usas_tags': token._.pymusas_tags[0].split('/'),
                             'usas_tags_def': self.usas_tags_def(token),
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
@@ -554,7 +591,7 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            #'usas_tags': token._.pymusas_tags[0].split('/'),
+                            'usas_tags': token._.pymusas_tags[0].split('/'),
                             'usas_tags_def': self.usas_tags_def(token),
                             'lemma':token.lemma_,
                             #'token_tag': self.token_usas_tags(token),
@@ -678,12 +715,16 @@ class SemanticTagger():
                     self.df[left_right] = self.df[left_right][self.df[left_right]['mwe'].isin(inc_mwe)]
                 
                 pd.set_option('display.max_rows', None) #len(self.df[left_right]))
-                pd.set_option('display.max_colwidth', None)
-                warnings.filterwarnings("ignore")
-                #display(self.df[left_right].style)
-                #display(self.df[left_right])
-                self.df[left_right].style.set_sticky(axis="index")
-                display(HTML("<div headers:True; style='height: 480px; overflow: auto; width: '480px'>" + self.df[left_right].to_html() + "</div>"))
+                #pd.set_option('display.max_colwidth', None)
+                
+                # display in html format for styling purpose
+                df_html = self.df[left_right].to_html()
+                
+                # Concatenating to single string
+                df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
+                
+                print('Text name: {}'.format(self.text_name[left_right]))
+                display(HTML(df_html))
                 pd.options.display.max_colwidth = 50
                 
                 # Puts the scrollbar next to the DataFrame
@@ -704,15 +745,18 @@ class SemanticTagger():
             hbox4 = widgets.HBox([filter_mwe, select_mwe],
                                  layout = widgets.Layout(width='300px',
                                                          margin='0px 0px 0px 36px'))
-            hbox5 = widgets.VBox([hbox2, hbox3, hbox4])
+            hbox5a = widgets.HBox([hbox2, hbox3])
+            hbox5 = widgets.VBox([hbox5a, hbox4])
         else:
             hbox5 = widgets.HBox([hbox2, hbox3])
         hbox6 = widgets.HBox([display_button],
                              layout=Layout(margin= '0px 0px 10px 75px'))
-        vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out],
+        #vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out],
+        #                     layout = widgets.Layout(width='500px'))
+        vbox = widgets.VBox([hbox1, hbox5, hbox6],
                              layout = widgets.Layout(width='500px'))
         
-        return vbox
+        return vbox, display_out
     
     
     def display_two_tag_texts(self): 
@@ -720,12 +764,13 @@ class SemanticTagger():
         Function to display tagged texts commparison 
         '''
         # widget for displaying first text
-        vbox1 = self.display_tag_text('left')
-        vbox2 = self.display_tag_text('right')
+        vbox1, display_out1 = self.display_tag_text('left')
+        vbox2, display_out2 = self.display_tag_text('right')
         
         hbox = widgets.HBox([vbox1, vbox2])
+        vbox = widgets.VBox([hbox, display_out1, display_out2])
         
-        return hbox
+        return vbox
         
         
     def save_tag_text(self, 
@@ -1124,6 +1169,8 @@ class SemanticTagger():
         with text_out:
             batch_size = end_n.value - start_n.value
             pd.set_option('display.max_rows', self.max_to_process)
+            
+            # display texts to be saved
             display(self.text_df[start_n.value:end_n.value])
             
         # give notification when file is uploaded
@@ -1296,7 +1343,7 @@ class SemanticTagger():
         n_option = widgets.BoundedIntText(
             value=value,
             min=0,
-            max=len(self.text_df),
+            #max=len(self.text_df),
             step=5,
             description='',
             disabled=False,
