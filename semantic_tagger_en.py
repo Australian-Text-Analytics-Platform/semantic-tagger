@@ -932,18 +932,18 @@ class SemanticTagger():
                 plt.text(v+(len(str(v))*0.05), 
                          i, 
                          '  {} ({:.0f}%)'.format(v,100*v/sum_ent), 
-                         fontsize=12)
+                         fontsize=10)
             
             # specify xticks, yticks and title
             plt.xticks(range(0, max(top_ent.values())+int(2*range_tick), 
                              range_tick), 
-                       fontsize=12)
-            plt.yticks(fontsize=12)
+                       fontsize=10)
+            plt.yticks(fontsize=10)
             bar_title = 'Top {} "{}" in text: "{}"'.format(min(top_n,
                                                            len(top_ent.keys())),
                                                              title, 
                                                              which_text)
-            plt.title(bar_title, fontsize=14)
+            plt.title(bar_title, fontsize=12)
             plt.show()
             
         return fig, bar_title
