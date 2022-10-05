@@ -27,6 +27,7 @@ from matplotlib import pyplot as plt
 
 # spaCy and NLTK: natural language processing tools for working with language/text data
 import spacy
+from spacy.tokens import Doc
 import nltk
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
@@ -558,11 +559,25 @@ class SemanticTagger():
         return token_tag
     
     
+    def highlight_sentence(self, sentence, word, word_index) -> str:
+        '''
+        Function to highlight selected token in the sentence
+
+        Args:
+            token: the token to be highlighted
+        '''
+        highlight_word = '<span style="color: #2ca25f; font-weight: bold">{}</span>'.format(word)
+        text = ''.join([token.text+token.whitespace_ \
+                        if token.i!=word_index else highlight_word+token.whitespace_ \
+                            for token in sentence])
+        
+        return text
+    
+    
     def add_tagger(self, 
                    text_name: str,
                    text_id:str, 
-                   doc) -> pd.DataFrame:
-                   #text: str) -> pd.DataFrame:
+                   doc) -> pd.DataFrame:    
         '''
         add semantic tags to the texts and convert into pandas dataframe
 
@@ -584,7 +599,8 @@ class SemanticTagger():
                             #'start_index':(token._.pymusas_mwe_indexes[0][0]),
                             #'end_index':(token._.pymusas_mwe_indexes[0][1]),
                             #'token_tag': self.token_usas_tags(token),
-                            'sentence':str(token.sent)} for token in doc]
+                            #'sentence':str(token.sent)} for token in doc]
+                            'sentence':self.highlight_sentence(token.sent, token.text, token.i)} for token in doc]
         else:
             # extract the semantic tag for each token
             tagged_text = [{'text_name':text_name,
@@ -595,7 +611,8 @@ class SemanticTagger():
                             'usas_tags_def': self.usas_tags_def(token),
                             'lemma':token.lemma_,
                             #'token_tag': self.token_usas_tags(token),
-                            'sentence':str(token.sent)} for token in doc]
+                            #'sentence':str(token.sent)} for token in doc]
+                            'sentence':self.highlight_sentence(token.sent, token.text, token.i)} for token in doc]
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
@@ -718,7 +735,7 @@ class SemanticTagger():
                 #pd.set_option('display.max_colwidth', None)
                 
                 # display in html format for styling purpose
-                df_html = self.df[left_right].to_html()
+                df_html = self.df[left_right].to_html(escape=False)
                 
                 # Concatenating to single string
                 df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
