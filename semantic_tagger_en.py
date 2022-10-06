@@ -577,7 +577,7 @@ class SemanticTagger():
     def add_tagger(self, 
                    text_name: str,
                    text_id:str, 
-                   doc) -> pd.DataFrame:    
+                   doc) -> pd.DataFrame:
         '''
         add semantic tags to the texts and convert into pandas dataframe
 
