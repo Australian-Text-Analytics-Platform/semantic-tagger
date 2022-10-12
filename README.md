@@ -1,6 +1,4 @@
-# HASS-60: Semantic-Tagger (English)
-
-## Sydney Informatics Hub
+# Semantic-Tagger (English)
 
 <b>Abstract:</b> with the Semantic Tagger, you can use [Python Multilingual Ucrel Semantic Analysis System (PyMUSAS)](https://ucrel.github.io/pymusas/) to tag your text so you can extract token level semantic tags from the tagged text. PyMUSAS, is a rule based token and Multi Word Expression (MWE) semantic tagger. The tagger can support any semantic tagset, however the currently released tagset is for the [UCREL Semantic Analysis System (USAS)](https://ucrel.lancs.ac.uk/usas/) semantic tags. 
 

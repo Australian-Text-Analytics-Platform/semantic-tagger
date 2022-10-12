@@ -1006,7 +1006,7 @@ class SemanticTagger():
         
         # function to define what happens when the button is clicked
         def on_analyse_button_clicked(_):
-            # clear svae_out
+            # clear save_out
             with save_out:
                 clear_output()
                 
