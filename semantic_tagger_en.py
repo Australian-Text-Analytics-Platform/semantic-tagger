@@ -497,16 +497,17 @@ class SemanticTagger():
         
     
     def check_mwe(self, token) -> str:
-    #def check_mwe(self, start_index, end_index) -> str:
         '''
         Function to check if a token is part of multi-word expressions
 
         Args:
             token: the spaCy token to check
         '''
+        #start_index = token._.pymusas_mwe_indexes[0][0]
+        #end_index = token._.pymusas_mwe_indexes[0][1]
         return ['yes' if (token._.pymusas_mwe_indexes[0][1]-\
                          token._.pymusas_mwe_indexes[0][0])>1 else 'no'][0]
-        #return ['yes' if (end_index-start_index)>1 else 'no'][0]
+        #return ['yes: '+str(token.sent[start_index:end_index]) if (end_index-start_index)>1 else 'no'][0]
     
     
     def remove_symbols(self, text: str) -> str:
@@ -559,17 +560,36 @@ class SemanticTagger():
         return token_tag
     
     
-    def highlight_sentence(self, sentence, word, word_index) -> str:
+    def highlight_sentence(self, token) -> str:
         '''
         Function to highlight selected token in the sentence
 
         Args:
             token: the token to be highlighted
         '''
-        highlight_word = '<span style="color: #2ca25f; font-weight: bold">{}</span>'.format(word)
-        text = ''.join([token.text+token.whitespace_ \
-                        if token.i!=word_index else highlight_word+token.whitespace_ \
-                            for token in sentence])
+        sentence = token.sent
+        start_index = token._.pymusas_mwe_indexes[0][0]
+        end_index = token._.pymusas_mwe_indexes[0][1]
+        
+        if end_index-start_index>1:# and end_index!=(len(sentence)-1):
+            new_sentence = []
+            for token in sentence:
+                if token.i==start_index:
+                    highlight_word_start = '<span style="color: #2ca25f; font-weight: bold">{}'.format(str(token.text))
+                    new_sentence.append(highlight_word_start+token.whitespace_)
+                elif token.i==end_index-1:
+                    highlight_word_end = '{}</span>'.format(str(token.text))
+                    new_sentence.append(highlight_word_end+token.whitespace_)
+                else:
+                    new_sentence.append(token.text+token.whitespace_)
+            text = ''.join(new_sentence)
+        else:
+            word = token.text
+            word_index = token.i
+            highlight_word = '<span style="color: #2ca25f; font-weight: bold">{}</span>'.format(word)
+            text = ''.join([token.text+token.whitespace_ \
+                            if token.i!=word_index else highlight_word+token.whitespace_ \
+                                for token in sentence])
         
         return text
     
@@ -596,11 +616,7 @@ class SemanticTagger():
                             'usas_tags_def': self.usas_tags_def(token),
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
-                            #'start_index':(token._.pymusas_mwe_indexes[0][0]),
-                            #'end_index':(token._.pymusas_mwe_indexes[0][1]),
-                            #'token_tag': self.token_usas_tags(token),
-                            #'sentence':str(token.sent)} for token in doc]
-                            'sentence':self.highlight_sentence(token.sent, token.text, token.i)} for token in doc]
+                            'sentence':self.highlight_sentence(token)} for token in doc]
         else:
             # extract the semantic tag for each token
             tagged_text = [{'text_name':text_name,
@@ -610,9 +626,7 @@ class SemanticTagger():
                             'usas_tags': token._.pymusas_tags[0].split('/'),
                             'usas_tags_def': self.usas_tags_def(token),
                             'lemma':token.lemma_,
-                            #'token_tag': self.token_usas_tags(token),
-                            #'sentence':str(token.sent)} for token in doc]
-                            'sentence':self.highlight_sentence(token.sent, token.text, token.i)} for token in doc]
+                            'sentence':self.highlight_sentence(token)} for token in doc]
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
@@ -635,6 +649,12 @@ class SemanticTagger():
         for n, doc in enumerate(tqdm(self.nlp.pipe(self.text_df['text'].to_list(),
                                                 n_process=n_process),
                                   total=len(self.text_df))):
+            text_name = self.text_df.text_name[self.text_df.index[n]]
+            text_id = self.text_df.text_id[self.text_df.index[n]]
+            tagged_text = self.add_tagger(text_name, 
+                                          text_id, 
+                                          doc)
+            self.tagged_df = pd.concat([self.tagged_df,tagged_text])
             try:
                 text_name = self.text_df.text_name[self.text_df.index[n]]
                 text_id = self.text_df.text_id[self.text_df.index[n]]
@@ -743,10 +763,7 @@ class SemanticTagger():
                 print('Text name: {}'.format(self.text_name[left_right]))
                 display(HTML(df_html))
                 pd.options.display.max_colwidth = 50
-                
-                # Puts the scrollbar next to the DataFrame
-
-                    
+        
         # link the button with the function
         display_button.on_click(on_display_button_clicked)
         
@@ -926,7 +943,7 @@ class SemanticTagger():
             ):
         '''
         Create a horizontal bar plot for displaying top n named entities
-
+        
         Args:
             top_ent: the top entities to display
             top_ent: the number of top entities to display
