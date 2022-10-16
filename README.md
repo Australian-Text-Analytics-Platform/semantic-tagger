@@ -38,7 +38,7 @@ This tagger will allow you to tag text data in a text file (or a number of text 
 Once your texts have been uploaded, you can begin to add semantic tags to the texts and analyse them using the tools included in the notebook. 
 
 <img width='740' src='./img/text_analysis.png'/>  
-<img width='740' src='./img/stat_analysis.png'/>  
+<img width='740' src='./img/stats_analysis.png'/>  
 
 ## Reference
 This code has been adapted from the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) and modified to run on a Jupyter Notebook. PyMUSAS is an open-source project that has been created and funded by the [University Centre for Computer Corpus Research on Language (UCREL)](https://ucrel.lancs.ac.uk/) at [Lancaster University](https://www.lancaster.ac.uk/). For more information about PyMUSAS, please visit [the Usage Guides page](https://ucrel.github.io/pymusas/).
