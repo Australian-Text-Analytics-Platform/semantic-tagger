@@ -35,7 +35,7 @@ This tagger will allow you to tag text data in a text file (or a number of text 
 <b>Note:</b> If you have a large number of text files (more than 10MB in total), we suggest you compress (zip) them and upload the zip file instead. If you need assistance on how to compress your file, please check [the user guide](https://github.com/Sydney-Informatics-Hub/HASS-29_Quotation_Tool/blob/main/documents/jupyter-notebook-guide.pdf).  
 
 ## Add Semantic Tags
-Once your texts have been uploaded, you can begin to add semantic tags to the texts and analyse them using the tools included in the notebook. Below, you can display the semantic tags, the pos-tagging and the MWE indicator for each token in a particular text, compared them side by side with those from another text (including the counts).
+Once your texts have been uploaded, you can begin to add semantic tags to the texts and analyse them using the tools included in the notebook. You can display the semantic tags, the pos-tagging and the MWE indicator for each token in a particular text, and compared them side by side with those from another text.
 
 <img width='740' src='./img/text_analysis.png'/>  
 
@@ -43,7 +43,7 @@ You can also compare the top-n statistics between texts (or all texts in the cor
   
 <img width='740' src='./img/stats_analysis.png'/>  
 
-Last but not least, you can save the tagged texts onto an excel spreadsheet and download it to your local computer.  
+Lastly, you can save the tagged texts onto an excel spreadsheet and download it to your local computer.  
 
 <img width='740' src='./img/save_output.png'/> 
 
