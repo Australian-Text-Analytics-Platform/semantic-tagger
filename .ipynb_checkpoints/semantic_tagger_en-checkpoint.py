@@ -153,7 +153,7 @@ class SemanticTagger():
         <style scoped>
             .dataframe-div {
               max-height: 350px;
-              max-width: 1050px;
+              max-width: 1000px;
               overflow: auto;
               position: relative;
             }
@@ -780,7 +780,7 @@ class SemanticTagger():
                 display(HTML(all_html))
                 display(HTML(df_html))
                 
-                #pd.options.display.max_colwidth = 50
+                pd.options.display.max_colwidth = 50
         
         # link the button with the function
         display_button.on_click(on_display_button_clicked)
