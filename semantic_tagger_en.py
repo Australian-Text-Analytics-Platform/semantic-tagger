@@ -18,6 +18,7 @@ from pathlib import Path
 import re
 import joblib
 import warnings
+import itertools
 
 # pandas: tools for data processing
 import pandas as pd
@@ -740,7 +741,8 @@ class SemanticTagger():
                 if inc_usas!=('all',):
                     usas_index=[]
                     for selected_usas in inc_usas:
-                        index = [n for n, item in enumerate(self.df[left_right].usas_tags_def.to_list()) if selected_usas in item]
+                        index = [n for n, item in enumerate(self.df[left_right].usas_tags_def.to_list()) \
+                                 if selected_usas in item]
                         usas_index.extend(index)
                     usas_index = list(set(usas_index))
                     self.df[left_right] = self.df[left_right].iloc[usas_index]
@@ -751,8 +753,22 @@ class SemanticTagger():
                 if inc_mwe!=('all',):
                     self.df[left_right] = self.df[left_right][self.df[left_right]['mwe'].isin(inc_mwe)]
                 
-                pd.set_option('display.max_rows', None) #len(self.df[left_right]))
-                #pd.set_option('display.max_colwidth', None)
+                pd.set_option('display.max_rows', None)
+                
+                
+                
+                print('Text name: {}'.format(self.text_name[left_right]))
+                count_usas = pd.DataFrame.from_dict(Counter(list(itertools.chain(*self.df[left_right].usas_tags_def.to_list()))),
+                                                    orient='index', columns=['usas_tag']).T
+                count_pos = pd.DataFrame.from_dict(Counter(self.df[left_right].pos.to_list()),
+                                                   orient='index', columns=['pos']).T
+                count_mwe = pd.DataFrame.from_dict(Counter(self.df[left_right].mwe.to_list()),
+                                                   orient='index', columns=['mwe']).T
+                
+                count_all = pd.concat([count_usas, count_pos, count_mwe])
+                count_all = count_all.fillna('-')
+                all_html = count_all.to_html(escape=False)
+                all_html = self.style+'<div class="dataframe-div">'+all_html+"\n</div>"
                 
                 # display in html format for styling purpose
                 df_html = self.df[left_right].to_html(escape=False)
@@ -760,8 +776,9 @@ class SemanticTagger():
                 # Concatenating to single string
                 df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
                 
-                print('Text name: {}'.format(self.text_name[left_right]))
+                display(HTML(all_html))
                 display(HTML(df_html))
+                
                 pd.options.display.max_colwidth = 50
         
         # link the button with the function
