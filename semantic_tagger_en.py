@@ -10,6 +10,8 @@ import codecs
 import hashlib
 import io
 import os
+import subprocess
+import sys
 from tqdm import tqdm
 from zipfile import ZipFile
 from pyexcelerate import Workbook
@@ -34,7 +36,7 @@ nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
 
 # langdetect: tool to detect language in a text
-from langdetect import detect
+#from langdetect import detect
 
 # ipywidgets: tools for interactive browser controls in Jupyter notebooks
 import ipywidgets as widgets
@@ -78,16 +80,17 @@ class SemanticTagger():
         Initiate the SemanticTagger
         '''
         # download spaCy's en_core_web_sm, the pre-trained English language tool from spaCy
-        print('Loading spaCy language model...')
-        print('This may take a while...')
+        
+        #print('Loading spaCy language model...')
+        #print('This may take a while...')
         
         # Construction via spaCy pipeline
-        exclude = ['ner', 'parser', 'entity_linker', 'entity_ruler', 
-                   'morphologizer', 'transformer']
+        #exclude = ['ner', 'parser', 'entity_linker', 'entity_ruler', 
+        #           'morphologizer', 'transformer']
         
         # load spacy and exclude unecessary components 
-        self.nlp = spacy.load('en_core_web_sm', exclude=exclude)
-        print('Finished loading.')
+        #self.nlp = spacy.load('en_core_web_sm', exclude=exclude)
+        #print('Finished loading.')
         
         # initiate other necessary variables
         self.mwe = None
@@ -185,6 +188,87 @@ class SemanticTagger():
             }
         </style>
         """
+        
+        
+    def loading_semantic_tagger(self, 
+                                language: str, 
+                                mwe: str):
+        '''
+        loading spaCy language model and PyMUSAS pipeline based on the selected language
+
+        Args:
+            language: the language selected by user
+        '''
+        # the different parameters for different languages
+        languages = {'english':
+                     {'yes':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl',
+                             'spacy_lang_model':'en_core_web_sm',
+                             'exclude':['parser', 'ner'],
+                             'pymusas_tagger':'en_dual_none_contextual'},
+                      'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/en_single_none_contextual-0.3.1/en_single_none_contextual-0.3.1-py3-none-any.whl',
+                            'spacy_lang_model':'en_core_web_sm',
+                            'exclude':['parser', 'ner'],
+                            'pymusas_tagger':'en_single_none_contextual'}},
+                     'chinese':
+                         {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/cmn_dual_upos2usas_contextual-0.3.0/cmn_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
+                                 'spacy_lang_model':'zh_core_web_sm',
+                                 'exclude':['parser', 'ner'],
+                                 'pymusas_tagger':'cmn_dual_upos2usas_contextual'},
+                          'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/cmn_single_upos2usas_contextual-0.3.1/cmn_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                                'spacy_lang_model':'zh_core_web_sm',
+                                'exclude':['parser', 'ner'],
+                                'pymusas_tagger':'cmn_single_upos2usas_contextual'}},
+                     'italian':
+                         {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/it_dual_upos2usas_contextual-0.3.0/it_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
+                                 'spacy_lang_model':'it_core_news_sm',
+                                 'exclude':['parser', 'ner', 'tagger'],
+                                 'pymusas_tagger':'it_dual_upos2usas_contextual'},
+                          'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/it_single_upos2usas_contextual-0.3.1/it_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                                'spacy_lang_model':'it_core_news_sm',
+                                'exclude':['parser', 'ner', 'tagger'],
+                                'pymusas_tagger':'it_single_upos2usas_contextual'}},
+                     'spanish':
+                         {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/es_dual_upos2usas_contextual-0.3.0/es_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
+                                 'spacy_lang_model':'es_core_news_sm',
+                                 'exclude':['parser', 'ner'],
+                                 'pymusas_tagger':'es_dual_upos2usas_contextual'},
+                          'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/es_single_upos2usas_contextual-0.3.1/es_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                                'spacy_lang_model':'es_core_news_sm',
+                                'exclude':['parser', 'ner'],
+                                'pymusas_tagger':'es_single_upos2usas_contextual'}},
+                     }
+        
+        if self.mwe_count==0:
+            # give warning loading the pipeline may take a while
+            print('Loading the Semantic Tagger for the selected language...')
+            print('This may take a while...')
+            
+            # install the required PyMUSAS files
+            warnings.filterwarnings("ignore")
+            try: 
+                subprocess.check_call([sys.executable, "-m", "pip", "install", languages[language][mwe]['package']], 
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+    
+            # download spaCy's language model for the selected language
+            # and exclude unnecessary components
+            self.nlp = spacy.load(languages[language][mwe]['spacy_lang_model'], 
+                                  exclude=languages[language][mwe]['exclude'])
+            
+            # load the PyMUSAS rule based tagger in a separate spaCy pipeline
+            tagger_pipeline = spacy.load(languages[language][mwe]['pymusas_tagger'])
+            
+            # adds the PyMUSAS rule based tagger to the main spaCy pipeline
+            self.nlp.add_pipe('pymusas_rule_based_tagger', source=tagger_pipeline)
+            self.nlp.add_pipe('sentencizer')
+            print('Finished loading.')
+            warnings.filterwarnings("default")
+            self.mwe_count+=1
+        else:
+            print('\nSemantic tagger has been loaded and ready for use.')
+            print('Please re-start the kernel if you wish to select a different option (at the top, select Kernel - Restart).')
     
     
     def select_mwe(self):
@@ -210,10 +294,29 @@ class SemanticTagger():
             print('Please re-start the kernel if you wish to select another option (at the top, select Kernel - Restart).')
             
     
-    def mwe_widget(self):
+    def loading_tagger_widget(self):
         '''
-        Create a widget to select the mwe option
+        Create a widget to select the semantic tagger language and the mwe option
         '''
+        # widget to display instruction
+        enter_language = widgets.HTML(
+            value='<b>Select a language:</b>',
+            placeholder='',
+            description=''
+            )
+        
+        # select language
+        select_language = widgets.Dropdown(
+            options=['english', 
+                     'chinese', 
+                     'italian', 
+                     'spanish'],
+            value='english',
+            description='',
+            disabled=False,
+            layout = widgets.Layout(width='200px')
+        )
+        
         # widget to display instruction
         enter_text = widgets.HTML(
             value='Would you like to include multi-word expressions (mwe)?',
@@ -239,18 +342,23 @@ class SemanticTagger():
             )
         
         # widget to show loading button
-        mwe_button, mwe_out = self.click_button_widget(desc='Load Semantic Tagger', 
+        load_button, load_out = self.click_button_widget(desc='Load Semantic Tagger', 
                                                        margin='15px 0px 0px 0px',
                                                        width='180px')
         
         # function to define what happens when the button is clicked
-        def on_mwe_button_clicked(_):
-            with mwe_out:
+        def on_load_button_clicked(_):
+            with load_out:
                 clear_output()
                 
-                # load selected language semantic tagger
+                language = select_language.value
                 self.mwe = mwe_selection.value
-                self.select_mwe()
+                
+                # load selected language semantic tagger
+                self.loading_semantic_tagger(language, self.mwe)
+                enter_language.value = 'Semantic tagger for {} language has been loaded'.format(language)
+                select_language.options = [language]
+                #self.select_mwe()
                 
                 if self.mwe=='no':
                     enter_text.value = 'Semantic tagger without MWE extraction has been loaded and ready for use.'
@@ -262,12 +370,14 @@ class SemanticTagger():
                 
                 
         # link the button with the function
-        mwe_button.on_click(on_mwe_button_clicked)
+        load_button.on_click(on_load_button_clicked)
         
-        vbox = widgets.VBox([enter_text, 
+        vbox = widgets.VBox([enter_language,
+                             select_language,
+                             enter_text, 
                              mwe_selection, 
                              enter_text2, 
-                             mwe_button, mwe_out])
+                             load_button, load_out])
         
         return vbox
 
