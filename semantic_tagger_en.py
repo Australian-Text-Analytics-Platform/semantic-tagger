@@ -686,6 +686,9 @@ class SemanticTagger():
                                                        margin='12px 0px 0px 0px',
                                                        width='150px')
         
+        # the widget for statistic output
+        stat_out = widgets.Output()
+        
         # widget to filter pos
         filter_pos, select_pos = self.select_multiple_options('<b>pos:</b>',
                                                               ['all'],
@@ -756,9 +759,19 @@ class SemanticTagger():
                 
                 pd.set_option('display.max_rows', None)
                 
+                print('Tagged text: {}'.format(self.text_name[left_right]))
+                # display in html format for styling purpose
+                df_html = self.df[left_right].to_html(escape=False)
                 
+                # Concatenating to single string
+                df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
                 
-                print('Text name: {}'.format(self.text_name[left_right]))
+                #display(HTML(all_html))
+                display(HTML(df_html))
+                
+            with stat_out:
+                clear_output()
+                print('Statistical information: {}'.format(self.text_name[left_right]))
                 count_usas = pd.DataFrame.from_dict(Counter(list(itertools.chain(*self.df[left_right].usas_tags_def.to_list()))),
                                                     orient='index', columns=['usas_tag']).T
                 count_pos = pd.DataFrame.from_dict(Counter(self.df[left_right].pos.to_list()),
@@ -770,15 +783,7 @@ class SemanticTagger():
                 count_all = count_all.fillna('-')
                 all_html = count_all.to_html(escape=False)
                 all_html = self.style+'<div class="dataframe-div">'+all_html+"\n</div>"
-                
-                # display in html format for styling purpose
-                df_html = self.df[left_right].to_html(escape=False)
-                
-                # Concatenating to single string
-                df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
-                
                 display(HTML(all_html))
-                display(HTML(df_html))
                 
                 #pd.options.display.max_colwidth = 50
         
@@ -808,7 +813,7 @@ class SemanticTagger():
         vbox = widgets.VBox([hbox1, hbox5, hbox6],
                              layout = widgets.Layout(width='500px'))
         
-        return vbox, display_out
+        return vbox, display_out, stat_out
     
     
     def display_two_tag_texts(self): 
@@ -816,11 +821,11 @@ class SemanticTagger():
         Function to display tagged texts commparison 
         '''
         # widget for displaying first text
-        vbox1, display_out1 = self.display_tag_text('left')
-        vbox2, display_out2 = self.display_tag_text('right')
+        vbox1, display_out1, stat_out1 = self.display_tag_text('left')
+        vbox2, display_out2, stat_out2 = self.display_tag_text('right')
         
         hbox = widgets.HBox([vbox1, vbox2])
-        vbox = widgets.VBox([hbox, display_out1, display_out2])
+        vbox = widgets.VBox([hbox, display_out1, display_out2, stat_out1, stat_out2])
         
         return vbox
         
