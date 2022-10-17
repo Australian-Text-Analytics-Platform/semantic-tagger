@@ -222,7 +222,8 @@ class SemanticTagger():
             )
         
         enter_text2 = widgets.HTML(
-            value = '<b><font size=2.5>Warning:</b> including mwe extraction will make the process much slower. For corpus >500 texts, we recommend choosing the non-MWE version</b>',
+            value = '<b><font size=2.5>Warning:</b> including mwe extraction will make the process much slower. \
+                For corpus >500 texts, we recommend choosing the non-MWE version</b>',
             #value='<b>Warning:</b> including mwe extraction will make the process much slower.',
             placeholder='',
             description=''
