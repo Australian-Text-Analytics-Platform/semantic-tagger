@@ -8,11 +8,11 @@ channels:
 dependencies:
   # try to install everything via conda where possible,
   # makes for simpler and quicker installs
-  - python=3.9.13
+  - python=3.8.13
   - spacy=3.3.1
   - spacy-model-en_core_web_sm=3.3.0
-  - pandas
-  - openpyxl
+  - pandas=1.4.3
+  - openpyxl=3.0.9
   - nltk=3.7
   - ipywidgets=7.6.5
   - pyarrow==8.0.0
