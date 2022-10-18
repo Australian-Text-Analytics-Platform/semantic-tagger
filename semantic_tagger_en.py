@@ -201,38 +201,46 @@ class SemanticTagger():
         '''
         # the different parameters for different languages
         languages = {'english':
-                     {'yes':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl',
+                     {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl',
+                             'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl',
                              'spacy_lang_model':'en_core_web_sm',
                              'exclude':['parser', 'ner'],
                              'pymusas_tagger':'en_dual_none_contextual'},
-                      'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/en_single_none_contextual-0.3.1/en_single_none_contextual-0.3.1-py3-none-any.whl',
+                      'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/en_single_none_contextual-0.3.1/en_single_none_contextual-0.3.1-py3-none-any.whl',
+                            'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl',
                             'spacy_lang_model':'en_core_web_sm',
                             'exclude':['parser', 'ner'],
                             'pymusas_tagger':'en_single_none_contextual'}},
                      'chinese':
                          {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/cmn_dual_upos2usas_contextual-0.3.0/cmn_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
+                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.2.0/zh_core_web_sm-3.2.0-py3-none-any.whl',
                                  'spacy_lang_model':'zh_core_web_sm',
                                  'exclude':['parser', 'ner'],
                                  'pymusas_tagger':'cmn_dual_upos2usas_contextual'},
                           'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/cmn_single_upos2usas_contextual-0.3.1/cmn_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                                'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.2.0/zh_core_web_sm-3.2.0-py3-none-any.whl',
                                 'spacy_lang_model':'zh_core_web_sm',
                                 'exclude':['parser', 'ner'],
                                 'pymusas_tagger':'cmn_single_upos2usas_contextual'}},
                      'italian':
                          {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/it_dual_upos2usas_contextual-0.3.0/it_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
+                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.2.0/it_core_news_sm-3.2.0-py3-none-any.whl',
                                  'spacy_lang_model':'it_core_news_sm',
                                  'exclude':['parser', 'ner', 'tagger'],
                                  'pymusas_tagger':'it_dual_upos2usas_contextual'},
                           'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/it_single_upos2usas_contextual-0.3.1/it_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                                'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.2.0/it_core_news_sm-3.2.0-py3-none-any.whl',
                                 'spacy_lang_model':'it_core_news_sm',
                                 'exclude':['parser', 'ner', 'tagger'],
                                 'pymusas_tagger':'it_single_upos2usas_contextual'}},
                      'spanish':
                          {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/es_dual_upos2usas_contextual-0.3.0/es_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
+                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.2.0/es_core_news_sm-3.2.0-py3-none-any.whl',
                                  'spacy_lang_model':'es_core_news_sm',
                                  'exclude':['parser', 'ner'],
                                  'pymusas_tagger':'es_dual_upos2usas_contextual'},
                           'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/es_single_upos2usas_contextual-0.3.1/es_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                                'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.2.0/es_core_news_sm-3.2.0-py3-none-any.whl',
                                 'spacy_lang_model':'es_core_news_sm',
                                 'exclude':['parser', 'ner'],
                                 'pymusas_tagger':'es_single_upos2usas_contextual'}},
@@ -650,12 +658,32 @@ class SemanticTagger():
         Args:
             token: the token containing the USAS tag to interpret
         '''
-        usas_tags = token._.pymusas_tags[0].split('/')
+        #print(token._.pymusas_tags)
+        try: 
+            usas_tags = token._.pymusas_tags[0].split('/')
+            if usas_tags[-1]=='':
+                usas_tags = usas_tags[:-1]
+        except: 
+            usas_tags = 'Z99'.split('/')
         
-        return [self.usas_tags[self.remove_symbols(usas_tag)]\
-                if self.remove_symbols(usas_tag) in self.usas_tags.keys()\
-                    else usas_tag\
-                        for usas_tag in usas_tags]
+        tag_def = []
+        tags = []
+        for usas_tag in usas_tags:
+            tag = self.remove_symbols(usas_tag)
+            if tag=='PUNCT':
+                tag_def.append(usas_tag)
+            else:
+                while tag not in self.usas_tags.keys() and tag!='':
+                    tag=tag[:-1]
+                try: tag_def.append(self.usas_tags[tag])
+                except: tag_def.append(usas_tag)
+            tags.append(tag)
+            
+        return tags, tag_def
+        #return [self.usas_tags[self.remove_symbols(usas_tag)]\
+        #        if self.remove_symbols(usas_tag) in self.usas_tags.keys()\
+        #            else usas_tag\
+        #                for usas_tag in usas_tags]
     
     
     def token_usas_tags(self, token) -> str:
@@ -671,6 +699,23 @@ class SemanticTagger():
             token_tag = token.text + ' (' + self.usas_tags_def(token)[0] + ')'
         
         return token_tag
+    
+    
+    def pymusas_tags(self, token) -> str:
+        '''
+        Function to add the USAS tag to the token
+
+        Args:
+            token: the token to be added with the USAS tag 
+        '''
+        try:
+            usas_tags = token._.pymusas_tags[0].split('/')
+            if usas_tags[-1]=='':
+                usas_tags = usas_tags[:-1]
+            return usas_tags
+            
+        except:
+            return 'Z99'.split('/')
     
     
     def highlight_sentence(self, token) -> str:
@@ -725,8 +770,8 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            'usas_tags': token._.pymusas_tags[0].split('/'),
-                            'usas_tags_def': self.usas_tags_def(token),
+                            'usas_tags': self.usas_tags_def(token)[0],#self.pymusas_tags(token),#token._.pymusas_tags[0].split('/'),
+                            'usas_tags_def': self.usas_tags_def(token)[1],
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
                             'sentence':self.highlight_sentence(token)} for token in doc]
