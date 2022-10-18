@@ -204,12 +204,12 @@ class SemanticTagger():
                      {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl',
                              'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl',
                              'spacy_lang_model':'en_core_web_sm',
-                             'exclude':['parser', 'ner'],
+                             'exclude':['ner', 'parser', 'entity_linker', 'entity_ruler', 'morphologizer', 'transformer'],
                              'pymusas_tagger':'en_dual_none_contextual'},
                       'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/en_single_none_contextual-0.3.1/en_single_none_contextual-0.3.1-py3-none-any.whl',
                             'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl',
                             'spacy_lang_model':'en_core_web_sm',
-                            'exclude':['parser', 'ner'],
+                            'exclude':['ner', 'parser', 'entity_linker', 'entity_ruler', 'morphologizer', 'transformer'],
                             'pymusas_tagger':'en_single_none_contextual'}},
                      'chinese':
                          {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/cmn_dual_upos2usas_contextual-0.3.0/cmn_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
@@ -254,6 +254,9 @@ class SemanticTagger():
             # install the required PyMUSAS files
             warnings.filterwarnings("ignore")
             try: 
+                subprocess.check_call([sys.executable, "-m", "pip", "install", languages[language][mwe]['install_spacy_lang']], 
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.STDOUT)
                 subprocess.check_call([sys.executable, "-m", "pip", "install", languages[language][mwe]['package']], 
                                    stdout=subprocess.DEVNULL,
                                    stderr=subprocess.STDOUT)
