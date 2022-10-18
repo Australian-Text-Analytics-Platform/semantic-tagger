@@ -242,7 +242,7 @@ class SemanticTagger():
             #warnings.filterwarnings("ignore")
             try:
                 for i in tqdm(range(2)):
-                    if 1==0: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['package']])
+                    if i==0: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['package']])
                     else: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['install_spacy_lang']])
             except subprocess.CalledProcessError as e:
                 raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
