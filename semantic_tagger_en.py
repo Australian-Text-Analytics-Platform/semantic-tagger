@@ -239,7 +239,7 @@ class SemanticTagger():
                                  'spacy_lang_model':'es_core_news_sm',
                                  'exclude':['parser', 'ner'],
                                  'pymusas_tagger':'es_dual_upos2usas_contextual'},
-                          'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/es_single_upos2usas_contextual-0.3.1/es_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                          'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/es_single_upos2usas_contextual-0.3.1/es_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.2.0/es_core_news_sm-3.2.0-py3-none-any.whl',
                                 'spacy_lang_model':'es_core_news_sm',
                                 'exclude':['parser', 'ner'],
