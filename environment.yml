@@ -10,16 +10,11 @@ dependencies:
   # makes for simpler and quicker installs
   - python=3.9.12
   - spacy=3.3.1
-  - spacy-model-en_core_web_sm=3.3.0
   - pandas=1.4.3
   - openpyxl=3.0.9
   - nltk=3.7
   - ipywidgets=7.6.5
-  - pyarrow==8.0.0
   - matplotlib
   - pip
   - pip:
-      - langdetect
       - pyexcelerate
-      - https://github.com/UCREL/pymusas-models/releases/download/en_single_none_contextual-0.3.1/en_single_none_contextual-0.3.1-py3-none-any.whl
-      - https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl

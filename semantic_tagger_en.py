@@ -79,19 +79,6 @@ class SemanticTagger():
         '''
         Initiate the SemanticTagger
         '''
-        # download spaCy's en_core_web_sm, the pre-trained English language tool from spaCy
-        
-        #print('Loading spaCy language model...')
-        #print('This may take a while...')
-        
-        # Construction via spaCy pipeline
-        #exclude = ['ner', 'parser', 'entity_linker', 'entity_ruler', 
-        #           'morphologizer', 'transformer']
-        
-        # load spacy and exclude unecessary components 
-        #self.nlp = spacy.load('en_core_web_sm', exclude=exclude)
-        #print('Finished loading.')
-        
         # initiate other necessary variables
         self.mwe = None
         self.mwe_count = 0
@@ -252,14 +239,11 @@ class SemanticTagger():
             print('This may take a while...')
             
             # install the required PyMUSAS files
-            warnings.filterwarnings("ignore")
-            try: 
-                subprocess.check_call([sys.executable, "-m", "pip", "install", languages[language][mwe]['install_spacy_lang']], 
-                                   stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.STDOUT)
-                subprocess.check_call([sys.executable, "-m", "pip", "install", languages[language][mwe]['package']], 
-                                   stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.STDOUT)
+            #warnings.filterwarnings("ignore")
+            try:
+                for i in tqdm(range(2)):
+                    if 1==0: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['package']])
+                    else: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['install_spacy_lang']])
             except subprocess.CalledProcessError as e:
                 raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
     
@@ -318,11 +302,12 @@ class SemanticTagger():
         
         # select language
         select_language = widgets.Dropdown(
-            options=['english', 
-                     'chinese', 
+            #options=['english', 
+            options=['chinese', 
                      'italian', 
                      'spanish'],
-            value='english',
+            #value='english',
+            value='spanish',
             description='',
             disabled=False,
             layout = widgets.Layout(width='200px')
@@ -921,7 +906,7 @@ class SemanticTagger():
                 print('Tagged text: {}'.format(self.text_name[left_right]))
                 # display in html format for styling purpose
                 if inc_usas==('all',) and inc_pos==('all',) and inc_mwe==('all',):
-                    print('The below table shows the first 500 tokens only')
+                    print('The below table shows the first 500 tokens only. Use the above filter to show tokens with specific tags.')
                     df_html = self.df[left_right].head(500).to_html(escape=False)
                 else:
                     df_html = self.df[left_right].to_html(escape=False)
@@ -1389,6 +1374,7 @@ class SemanticTagger():
         '''
         options for saving tagged texts
         '''
+        warnings.filterwarnings("ignore")
         # widget to display instruction
         enter_text = widgets.HTML(
             value='<b>Select the tagged texts to save (up to {} texts at a time):</b>'.format(self.max_to_process),
