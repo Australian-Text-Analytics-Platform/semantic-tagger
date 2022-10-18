@@ -217,7 +217,7 @@ class SemanticTagger():
                                  'spacy_lang_model':'zh_core_web_sm',
                                  'exclude':['parser', 'ner'],
                                  'pymusas_tagger':'cmn_dual_upos2usas_contextual'},
-                          'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/cmn_single_upos2usas_contextual-0.3.1/cmn_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                          'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/cmn_single_upos2usas_contextual-0.3.1/cmn_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.2.0/zh_core_web_sm-3.2.0-py3-none-any.whl',
                                 'spacy_lang_model':'zh_core_web_sm',
                                 'exclude':['parser', 'ner'],
@@ -228,7 +228,7 @@ class SemanticTagger():
                                  'spacy_lang_model':'it_core_news_sm',
                                  'exclude':['parser', 'ner', 'tagger'],
                                  'pymusas_tagger':'it_dual_upos2usas_contextual'},
-                          'no':{'package': 'pip install https://github.com/UCREL/pymusas-models/releases/download/it_single_upos2usas_contextual-0.3.1/it_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
+                          'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/it_single_upos2usas_contextual-0.3.1/it_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.2.0/it_core_news_sm-3.2.0-py3-none-any.whl',
                                 'spacy_lang_model':'it_core_news_sm',
                                 'exclude':['parser', 'ner', 'tagger'],
@@ -784,8 +784,8 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            'usas_tags': token._.pymusas_tags[0].split('/'),
-                            'usas_tags_def': self.usas_tags_def(token),
+                            'usas_tags': self.usas_tags_def(token)[0], #token._.pymusas_tags[0].split('/'),
+                            'usas_tags_def': self.usas_tags_def(token)[1], #self.usas_tags_def(token),
                             'lemma':token.lemma_,
                             'sentence':self.highlight_sentence(token)} for token in doc]
         
@@ -920,7 +920,11 @@ class SemanticTagger():
                 
                 print('Tagged text: {}'.format(self.text_name[left_right]))
                 # display in html format for styling purpose
-                df_html = self.df[left_right].to_html(escape=False)
+                if inc_usas==('all',) and inc_pos==('all',) and inc_mwe==('all',):
+                    print('The below table shows the first 500 tokens only')
+                    df_html = self.df[left_right].head(500).to_html(escape=False)
+                else:
+                    df_html = self.df[left_right].to_html(escape=False)
                 
                 # Concatenating to single string
                 df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
@@ -935,10 +939,14 @@ class SemanticTagger():
                                                     orient='index', columns=['usas_tag']).T
                 count_pos = pd.DataFrame.from_dict(Counter(self.df[left_right].pos.to_list()),
                                                    orient='index', columns=['pos']).T
-                count_mwe = pd.DataFrame.from_dict(Counter(self.df[left_right].mwe.to_list()),
-                                                   orient='index', columns=['mwe']).T
                 
-                count_all = pd.concat([count_usas, count_pos, count_mwe])
+                if self.mwe=='yes':
+                    count_mwe = pd.DataFrame.from_dict(Counter(self.df[left_right].mwe.to_list()),
+                                                       orient='index', columns=['mwe']).T
+                    count_all = pd.concat([count_usas, count_pos, count_mwe])
+                else:
+                    count_all = pd.concat([count_usas, count_pos])
+                
                 count_all = count_all.fillna('-')
                 all_html = count_all.to_html(escape=False)
                 all_html = self.style+'<div class="dataframe-div">'+all_html+"\n</div>"
