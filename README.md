@@ -15,7 +15,7 @@ This tool has been designed for use with minimal setup from users. You are able 
 If you are unable to access the tool via the first link above, then use the second link below. This is the free version of Binder, with less CPU and memory capacity (up to 2GB only).  
 
 2. This link is for people without Australian institutional affiliations  
-<<This link is under maintenance>>   
+<<This link is under maintenance..>>   
 
 <b>Note:</b> this may take a few minutes to launch as Binder needs to install the dependencies for the tool.
 
