@@ -302,8 +302,9 @@ class SemanticTagger():
         
         # select language
         select_language = widgets.Dropdown(
-            #options=['english', 
-            options=['chinese', 
+            options=['english', 
+                     'chinese',
+            #options=['chinese', 
                      'italian', 
                      'spanish'],
             #value='english',
