@@ -808,8 +808,7 @@ class SemanticTagger():
                 # display in html format for styling purpose
                 if inc_usas==('all',) and inc_pos==('all',) and inc_mwe==('all',):
                     # only displays the first n tokens, with n defined by self.token_to_display
-                    print('The below table shows the first {} tokens only. \
-                          Use the above filter to show tokens with specific tags.'.format(self.token_to_display))
+                    print('The below table shows the first {} tokens only. Use the above filter to show tokens with specific tags.'.format(self.token_to_display))
                     df_html = self.df[left_right].head(self.token_to_display).to_html(escape=False)
                 else:
                     df_html = self.df[left_right].to_html(escape=False)
