@@ -196,7 +196,7 @@ class SemanticTagger():
         
         if self.mwe_count==0:
             # give warning loading the pipeline may take a while
-            print('Loading the Semantic Tagger for the selected language...')
+            print('Loading the Semantic Tagger for the English language...')
             print('This may take a while...')
             
             # download spaCy's language model for the selected language
@@ -1004,16 +1004,6 @@ class SemanticTagger():
             title: title of the bar plot
             color: color of the bars
         '''
-        # add font for chinese characters
-        font_dirs = ['./documents/']
-        font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
-
-        for font_file in font_files:
-            font_manager.fontManager.addfont(font_file)
-
-        # set font
-        plt.rcParams['font.family'] = 'Heiti TC'
-        
         if top_ent!={}:
             # specify the width, height and tick range for the plot
             display_height = top_n/2
