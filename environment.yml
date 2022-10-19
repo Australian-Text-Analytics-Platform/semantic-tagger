@@ -18,4 +18,15 @@ dependencies:
   - pip
   - pip:
       - pyexcelerate
-      
+      # Chinese
+      - https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.2.0/zh_core_web_sm-3.2.0-py3-none-any.whl
+      - https://github.com/UCREL/pymusas-models/releases/download/cmn_dual_upos2usas_contextual-0.3.0/cmn_dual_upos2usas_contextual-0.3.0-py3-none-any.whl
+      - https://github.com/UCREL/pymusas-models/releases/download/cmn_single_upos2usas_contextual-0.3.1/cmn_single_upos2usas_contextual-0.3.1-py3-none-any.whl
+      # italian
+      - https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.2.0/it_core_news_sm-3.2.0-py3-none-any.whl
+      - https://github.com/UCREL/pymusas-models/releases/download/it_dual_upos2usas_contextual-0.3.0/it_dual_upos2usas_contextual-0.3.0-py3-none-any.whl
+      - https://github.com/UCREL/pymusas-models/releases/download/it_single_upos2usas_contextual-0.3.1/it_single_upos2usas_contextual-0.3.1-py3-none-any.whl
+      # spanish
+      - https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.2.0/es_core_news_sm-3.2.0-py3-none-any.whl
+      - https://github.com/UCREL/pymusas-models/releases/download/es_dual_upos2usas_contextual-0.3.0/es_dual_upos2usas_contextual-0.3.0-py3-none-any.whl
+      - https://github.com/UCREL/pymusas-models/releases/download/es_single_upos2usas_contextual-0.3.1/es_single_upos2usas_contextual-0.3.1-py3-none-any.whl

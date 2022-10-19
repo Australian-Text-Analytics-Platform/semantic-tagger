@@ -240,12 +240,12 @@ class SemanticTagger():
             
             # install the required PyMUSAS files
             #warnings.filterwarnings("ignore")
-            try:
-                for i in tqdm(range(2)):
-                    if i==0: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['package']])
-                    else: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['install_spacy_lang']])
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+            #try:
+            #    for i in tqdm(range(2)):
+            #        if i==0: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['package']])
+            #        else: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['install_spacy_lang']])
+            #except subprocess.CalledProcessError as e:
+            #    raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
     
             # download spaCy's language model for the selected language
             # and exclude unnecessary components
