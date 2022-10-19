@@ -9,18 +9,18 @@ This tool has been designed for use with minimal setup from users. You are able 
 
 <b>Note:</b> Please try to use the first link to access the tool via BinderHub (up to 8GB memory). You can use either your AAF, Microsoft or Google credentials to login. 
 
-1. This link is for people with Australian Institute Affiliations (authentication required) 
+1. This link is for people with Australian Institute Affiliations (authentication required)  
 [![Binder](https://binderhub.atap-binder.cloud.edu.au/badge_logo.svg)](https://binderhub.atap-binder.cloud.edu.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)    
 
 If you are unable to access the tool via the first link above, then use the second link below. This is the free version of Binder, with less CPU and memory capacity (up to 2GB only).  
 
 2. This link is for people without Australian institutional affiliations  
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)   
+Under maintenance...   
 
 <b>Note:</b> this may take a few minutes to launch as Binder needs to install the dependencies for the tool.
 
 ## Languages
-This Semantic Tagger supports English language. For Chinese, Italian, Spanish and Portuguese, please visit [this page](https://github.sydney.edu.au/informatics/HASS-60-Semantic-Tagger/tree/other_languages) or refer to the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) for other languages.
+This Semantic Tagger supports English language. For Chinese, Italian and Spanish, please visit [this page](https://github.com/Australian-Text-Analytics-Platform/semantic-tagger/tree/multi-lingual) or refer to the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) for other languages.
 
 ## Load the data
 <table style='margin-left: 10px'><tr>
