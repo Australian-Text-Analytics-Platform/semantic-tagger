@@ -2,14 +2,14 @@
 
 <b>Abstract:</b> with the Semantic Tagger, you can use [Python Multilingual Ucrel Semantic Analysis System (PyMUSAS)](https://ucrel.github.io/pymusas/) to tag your text so you can extract token level semantic tags from the tagged text. PyMUSAS, is a rule based token and Multi Word Expression (MWE) semantic tagger. The tagger can support any semantic tagset, however the currently released tagset is for the [UCREL Semantic Analysis System (USAS)](https://ucrel.lancs.ac.uk/usas/) semantic tags. 
 
-In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (POS) tags in the text. For these languages, the tagger also identifies and tags Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'Países Bajos'.
+In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (POS) tags in the text. For these languages, the tagger can also identify and tag Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'Países Bajos'.
 
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
 
 <b>Note:</b> Please try to use the first link to access the tool via BinderHub (up to 8GB memory). You can use either your AAF, Microsoft or Google credentials to login. 
 
-1. This link is for people with Australian Institute Affiliations (authentication required) 
+1. This link is for people with Australian Institute Affiliations (authentication required)  
 [![Binder](https://binderhub.atap-binder.cloud.edu.au/badge_logo.svg)](https://binderhub.atap-binder.cloud.edu.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/multi-lingual?labpath=semantic_tagger.ipynb)    
 
 If you are unable to access the tool via the first link above, then use the second link below. This is the free version of Binder, with less CPU and memory capacity (up to 2GB only).  
