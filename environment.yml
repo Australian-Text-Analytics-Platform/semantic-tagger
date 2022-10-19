@@ -14,7 +14,7 @@ dependencies:
   - openpyxl=3.0.9
   - nltk=3.7
   - ipywidgets=7.6.5
-  - matplotlib
+  - matplotlib=3.5.2
   - pip
   - pip:
       - pyexcelerate
