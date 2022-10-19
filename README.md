@@ -2,7 +2,7 @@
 
 <b>Abstract:</b> with the Semantic Tagger, you can use [Python Multilingual Ucrel Semantic Analysis System (PyMUSAS)](https://ucrel.github.io/pymusas/) to tag your text so you can extract token level semantic tags from the tagged text. PyMUSAS, is a rule based token and Multi Word Expression (MWE) semantic tagger. The tagger can support any semantic tagset, however the currently released tagset is for the [UCREL Semantic Analysis System (USAS)](https://ucrel.lancs.ac.uk/usas/) semantic tags. 
 
-In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (POS) tags in the text. For English, the tagger also identifies and tags Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'South Australia'.
+In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (POS) tags in the text. For these languages, the tagger also identifies and tags Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'Países Bajos'.
 
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
@@ -10,17 +10,17 @@ This tool has been designed for use with minimal setup from users. You are able 
 <b>Note:</b> Please try to use the first link to access the tool via BinderHub (up to 8GB memory). You can use either your AAF, Microsoft or Google credentials to login. 
 
 1. This link is for people with Australian Institute Affiliations (authentication required) 
-[![Binder](https://binderhub.atap-binder.cloud.edu.au/badge_logo.svg)](https://binderhub.atap-binder.cloud.edu.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)    
+[![Binder](https://binderhub.atap-binder.cloud.edu.au/badge_logo.svg)](https://binderhub.atap-binder.cloud.edu.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/multi-lingual?labpath=semantic_tagger.ipynb)    
 
 If you are unable to access the tool via the first link above, then use the second link below. This is the free version of Binder, with less CPU and memory capacity (up to 2GB only).  
 
 2. This link is for people without Australian institutional affiliations  
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)   
+Coming soon...   
 
 <b>Note:</b> this may take a few minutes to launch as Binder needs to install the dependencies for the tool.
 
 ## Languages
-This Semantic Tagger supports English language. For Chinese, Italian, Spanish and Portuguese, please visit [this page](https://github.sydney.edu.au/informatics/HASS-60-Semantic-Tagger/tree/other_languages) or refer to the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) for other languages.
+This Semantic Tagger supports Chinese, Italian and Spanish languages. For English, please visit [this page](https://github.com/Australian-Text-Analytics-Platform/semantic-tagger) or refer to the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) for other languages.
 
 ## Load the data
 <table style='margin-left: 10px'><tr>
