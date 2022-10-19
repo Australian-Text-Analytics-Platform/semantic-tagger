@@ -10,7 +10,6 @@ import codecs
 import hashlib
 import io
 import os
-import subprocess
 import sys
 from tqdm import tqdm
 from zipfile import ZipFile
@@ -35,9 +34,6 @@ from spacy.tokens import Doc
 import nltk
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
-
-# langdetect: tool to detect language in a text
-#from langdetect import detect
 
 # ipywidgets: tools for interactive browser controls in Jupyter notebooks
 import ipywidgets as widgets
@@ -81,11 +77,11 @@ class SemanticTagger():
         Initiate the SemanticTagger
         '''
         # initiate other necessary variables
-        self.mwe = None
         self.mwe_count = 0
         self.text_df = None
         self.tagged_df = None
         self.large_file_size = 1000000
+        self.token_to_display=500
         self.max_to_process = 50
         self.cpu_count = joblib.cpu_count()
         self.selected_text = {'left': None, 'right': None}
@@ -186,50 +182,28 @@ class SemanticTagger():
 
         Args:
             language: the language selected by user
+            mwe: whether to include Multi-Word Expressions (MWE) detection
         '''
         # the different parameters for different languages
-        languages = {'english':
-                     {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/en_dual_none_contextual-0.3.1/en_dual_none_contextual-0.3.1-py3-none-any.whl',
-                             'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl',
-                             'spacy_lang_model':'en_core_web_sm',
-                             'exclude':['ner', 'parser', 'entity_linker', 'entity_ruler', 'morphologizer', 'transformer'],
-                             'pymusas_tagger':'en_dual_none_contextual'},
-                      'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/en_single_none_contextual-0.3.1/en_single_none_contextual-0.3.1-py3-none-any.whl',
-                            'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl',
-                            'spacy_lang_model':'en_core_web_sm',
-                            'exclude':['ner', 'parser', 'entity_linker', 'entity_ruler', 'morphologizer', 'transformer'],
-                            'pymusas_tagger':'en_single_none_contextual'}},
-                     'chinese':
-                         {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/cmn_dual_upos2usas_contextual-0.3.0/cmn_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
-                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.2.0/zh_core_web_sm-3.2.0-py3-none-any.whl',
-                                 'spacy_lang_model':'zh_core_web_sm',
+        languages = {'chinese':
+                         {'yes':{'spacy_lang_model':'zh_core_web_sm',
                                  'exclude':['parser', 'ner'],
                                  'pymusas_tagger':'cmn_dual_upos2usas_contextual'},
-                          'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/cmn_single_upos2usas_contextual-0.3.1/cmn_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
-                                'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.2.0/zh_core_web_sm-3.2.0-py3-none-any.whl',
-                                'spacy_lang_model':'zh_core_web_sm',
+                          'no':{'spacy_lang_model':'zh_core_web_sm',
                                 'exclude':['parser', 'ner'],
                                 'pymusas_tagger':'cmn_single_upos2usas_contextual'}},
                      'italian':
-                         {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/it_dual_upos2usas_contextual-0.3.0/it_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
-                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.2.0/it_core_news_sm-3.2.0-py3-none-any.whl',
-                                 'spacy_lang_model':'it_core_news_sm',
+                         {'yes':{'spacy_lang_model':'it_core_news_sm',
                                  'exclude':['parser', 'ner', 'tagger'],
                                  'pymusas_tagger':'it_dual_upos2usas_contextual'},
-                          'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/it_single_upos2usas_contextual-0.3.1/it_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
-                                'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.2.0/it_core_news_sm-3.2.0-py3-none-any.whl',
-                                'spacy_lang_model':'it_core_news_sm',
+                          'no':{'spacy_lang_model':'it_core_news_sm',
                                 'exclude':['parser', 'ner', 'tagger'],
                                 'pymusas_tagger':'it_single_upos2usas_contextual'}},
                      'spanish':
-                         {'yes':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/es_dual_upos2usas_contextual-0.3.0/es_dual_upos2usas_contextual-0.3.0-py3-none-any.whl',
-                                 'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.2.0/es_core_news_sm-3.2.0-py3-none-any.whl',
-                                 'spacy_lang_model':'es_core_news_sm',
+                         {'yes':{'spacy_lang_model':'es_core_news_sm',
                                  'exclude':['parser', 'ner'],
                                  'pymusas_tagger':'es_dual_upos2usas_contextual'},
-                          'no':{'package': 'https://github.com/UCREL/pymusas-models/releases/download/es_single_upos2usas_contextual-0.3.1/es_single_upos2usas_contextual-0.3.1-py3-none-any.whl',
-                                'install_spacy_lang': 'https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.2.0/es_core_news_sm-3.2.0-py3-none-any.whl',
-                                'spacy_lang_model':'es_core_news_sm',
+                          'no':{'spacy_lang_model':'es_core_news_sm',
                                 'exclude':['parser', 'ner'],
                                 'pymusas_tagger':'es_single_upos2usas_contextual'}},
                      }
@@ -239,15 +213,6 @@ class SemanticTagger():
             print('Loading the Semantic Tagger for the selected language...')
             print('This may take a while...')
             
-            # install the required PyMUSAS files
-            #warnings.filterwarnings("ignore")
-            #try:
-            #    for i in tqdm(range(2)):
-            #        if i==0: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['package']])
-            #        else: subprocess.run(['pip', 'install', '-q', languages[language][mwe]['install_spacy_lang']])
-            #except subprocess.CalledProcessError as e:
-            #    raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
-    
             # download spaCy's language model for the selected language
             # and exclude unnecessary components
             self.nlp = spacy.load(languages[language][mwe]['spacy_lang_model'], 
@@ -267,29 +232,6 @@ class SemanticTagger():
             print('Please re-start the kernel if you wish to select a different option (at the top, select Kernel - Restart).')
     
     
-    def select_mwe(self):
-        '''
-        loading spaCy language model and PyMUSAS pipeline based on the selected mwe option
-        '''
-        if self.mwe_count==0:
-            print('Loading the semantic tagger...')
-            print('This may take a while...')
-            # load the English PyMUSAS rule based tagger in a separate spaCy pipeline
-            if self.mwe=='yes':
-                english_tagger_pipeline = spacy.load('en_dual_none_contextual') # with mwe, but much slower
-            else:
-                english_tagger_pipeline = spacy.load('en_single_none_contextual') # without mwe
-            
-            # adds the English PyMUSAS rule based tagger to the main spaCy pipeline
-            self.nlp.add_pipe('pymusas_rule_based_tagger', source=english_tagger_pipeline)
-            self.nlp.add_pipe('sentencizer')
-            print('Finished loading.')
-            self.mwe_count+=1
-        else:
-            print('\nSemantic tagger has been loaded and ready for use.')
-            print('Please re-start the kernel if you wish to select another option (at the top, select Kernel - Restart).')
-            
-    
     def loading_tagger_widget(self):
         '''
         Create a widget to select the semantic tagger language and the mwe option
@@ -303,12 +245,9 @@ class SemanticTagger():
         
         # select language
         select_language = widgets.Dropdown(
-            #options=['english', 
-            #         'chinese',
             options=['chinese', 
                      'italian', 
                      'spanish'],
-            #value='english',
             value='spanish',
             description='',
             disabled=False,
@@ -356,7 +295,6 @@ class SemanticTagger():
                 self.loading_semantic_tagger(language, self.mwe)
                 enter_language.value = 'Semantic tagger for {} language has been loaded'.format(language)
                 select_language.options = [language]
-                #self.select_mwe()
                 
                 if self.mwe=='no':
                     enter_text.value = 'Semantic tagger without MWE extraction has been loaded and ready for use.'
@@ -422,22 +360,6 @@ class SemanticTagger():
                           text['metadata']['name'].endswith('.txt')]
         if len(large_text)>0:
             print('The following file(s) are larger than 1MB:', large_text)
-        
-        
-    def check_language(self, texts: list):
-        '''
-        Function to check the language of the text
-        
-        Args:
-            texts: list of uploaded texts
-        '''
-        # detect the number of english texts
-        english_text = ['english' if detect(text)=='en' else 'non-english' for text in texts]
-        english_count = Counter(english_text)
-        
-        # print the number of english vs non-english texts
-        print('Total number of texts in English: {}'.format(english_count['english']))
-        print('Total number of texts in other languages: {}'.format(english_count['non-english']))
         
         
     def extract_zip(self, zip_file):
@@ -614,12 +536,9 @@ class SemanticTagger():
         Args:
             token: the spaCy token to check
         '''
-        #start_index = token._.pymusas_mwe_indexes[0][0]
-        #end_index = token._.pymusas_mwe_indexes[0][1]
         return ['yes' if (token._.pymusas_mwe_indexes[0][1]-\
                          token._.pymusas_mwe_indexes[0][0])>1 else 'no'][0]
-        #return ['yes: '+str(token.sent[start_index:end_index]) if (end_index-start_index)>1 else 'no'][0]
-    
+        
     
     def remove_symbols(self, text: str) -> str:
         '''
@@ -648,7 +567,6 @@ class SemanticTagger():
         Args:
             token: the token containing the USAS tag to interpret
         '''
-        #print(token._.pymusas_tags)
         try: 
             usas_tags = token._.pymusas_tags[0].split('/')
             if usas_tags[-1]=='':
@@ -670,10 +588,6 @@ class SemanticTagger():
             tags.append(tag)
             
         return tags, tag_def
-        #return [self.usas_tags[self.remove_symbols(usas_tag)]\
-        #        if self.remove_symbols(usas_tag) in self.usas_tags.keys()\
-        #            else usas_tag\
-        #                for usas_tag in usas_tags]
     
     
     def token_usas_tags(self, token) -> str:
@@ -691,23 +605,6 @@ class SemanticTagger():
         return token_tag
     
     
-    def pymusas_tags(self, token) -> str:
-        '''
-        Function to add the USAS tag to the token
-
-        Args:
-            token: the token to be added with the USAS tag 
-        '''
-        try:
-            usas_tags = token._.pymusas_tags[0].split('/')
-            if usas_tags[-1]=='':
-                usas_tags = usas_tags[:-1]
-            return usas_tags
-            
-        except:
-            return 'Z99'.split('/')
-    
-    
     def highlight_sentence(self, token) -> str:
         '''
         Function to highlight selected token in the sentence
@@ -719,7 +616,8 @@ class SemanticTagger():
         start_index = token._.pymusas_mwe_indexes[0][0]
         end_index = token._.pymusas_mwe_indexes[0][1]
         
-        if end_index-start_index>1:# and end_index!=(len(sentence)-1):
+        # highlight multi-words for MWE
+        if end_index-start_index>1:
             new_sentence = []
             for token in sentence:
                 if token.i==start_index:
@@ -731,6 +629,7 @@ class SemanticTagger():
                 else:
                     new_sentence.append(token.text+token.whitespace_)
             text = ''.join(new_sentence)
+        # for non-MWE, just highlight the token
         else:
             word = token.text
             word_index = token.i
@@ -760,7 +659,7 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            'usas_tags': self.usas_tags_def(token)[0],#self.pymusas_tags(token),#token._.pymusas_tags[0].split('/'),
+                            'usas_tags': self.usas_tags_def(token)[0],
                             'usas_tags_def': self.usas_tags_def(token)[1],
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
@@ -771,8 +670,8 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
-                            'usas_tags': self.usas_tags_def(token)[0], #token._.pymusas_tags[0].split('/'),
-                            'usas_tags_def': self.usas_tags_def(token)[1], #self.usas_tags_def(token),
+                            'usas_tags': self.usas_tags_def(token)[0], 
+                            'usas_tags_def': self.usas_tags_def(token)[1], 
                             'lemma':token.lemma_,
                             'sentence':self.highlight_sentence(token)} for token in doc]
         
@@ -908,15 +807,16 @@ class SemanticTagger():
                 print('Tagged text: {}'.format(self.text_name[left_right]))
                 # display in html format for styling purpose
                 if inc_usas==('all',) and inc_pos==('all',) and inc_mwe==('all',):
-                    print('The below table shows the first 500 tokens only. Use the above filter to show tokens with specific tags.')
-                    df_html = self.df[left_right].head(500).to_html(escape=False)
+                    # only displays the first n tokens, with n defined by self.token_to_display
+                    print('The below table shows the first {} tokens only. \
+                          Use the above filter to show tokens with specific tags.'.format(self.token_to_display))
+                    df_html = self.df[left_right].head(self.token_to_display).to_html(escape=False)
                 else:
                     df_html = self.df[left_right].to_html(escape=False)
                 
                 # Concatenating to single string
                 df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
                 
-                #display(HTML(all_html))
                 display(HTML(df_html))
                 
             with stat_out:
@@ -935,12 +835,10 @@ class SemanticTagger():
                     count_all = pd.concat([count_usas, count_pos])
                 
                 count_all = count_all.fillna('-')
-                all_html = count_all.to_html(escape=False)
-                all_html = self.style+'<div class="dataframe-div">'+all_html+"\n</div>"
-                display(HTML(all_html))
+                stats_html = count_all.to_html(escape=False)
+                stats_html = self.style+'<div class="dataframe-div">'+stats_html+"\n</div>"
+                display(HTML(stats_html))
                 
-                #pd.options.display.max_colwidth = 50
-        
         # link the button with the function
         display_button.on_click(on_display_button_clicked)
         
@@ -962,8 +860,6 @@ class SemanticTagger():
             hbox5 = widgets.HBox([hbox2, hbox3])
         hbox6 = widgets.HBox([display_button],
                              layout=Layout(margin= '0px 0px 10px 75px'))
-        #vbox = widgets.VBox([hbox1, hbox5, hbox6, display_out],
-        #                     layout = widgets.Layout(width='500px'))
         vbox = widgets.VBox([hbox1, hbox5, hbox6],
                              layout = widgets.Layout(width='500px'))
         
@@ -1127,9 +1023,6 @@ class SemanticTagger():
             title: title of the bar plot
             color: color of the bars
         '''
-        import matplotlib.pyplot as plt
-        from matplotlib import font_manager
-        
         # add font for chinese characters
         font_dirs = ['./documents/']
         font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
