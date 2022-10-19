@@ -27,6 +27,7 @@ import pandas as pd
 
 # matplotlib: visualization tool
 from matplotlib import pyplot as plt
+from matplotlib import font_manager as fm
 
 # spaCy and NLTK: natural language processing tools for working with language/text data
 import spacy
@@ -302,9 +303,9 @@ class SemanticTagger():
         
         # select language
         select_language = widgets.Dropdown(
-            options=['english', 
-                     'chinese',
-            #options=['chinese', 
+            #options=['english', 
+            #         'chinese',
+            options=['chinese', 
                      'italian', 
                      'spanish'],
             #value='english',
@@ -1126,6 +1127,8 @@ class SemanticTagger():
             title: title of the bar plot
             color: color of the bars
         '''
+        import matplotlib
+        matplotlib.rcParams['font.family']='Heiti TC'
         if top_ent!={}:
             # specify the width, height and tick range for the plot
             display_height = top_n/2
