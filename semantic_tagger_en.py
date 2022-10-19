@@ -28,7 +28,7 @@ import pandas as pd
 # matplotlib: visualization tool
 from matplotlib import pyplot as plt
 from matplotlib import font_manager as fm
-fm.get_font('./documents/STHeiti Medium.ttc')
+fm.get_font('./documents/heiti_tc.ttf')
 
 # spaCy and NLTK: natural language processing tools for working with language/text data
 import spacy
