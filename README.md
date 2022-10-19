@@ -37,16 +37,16 @@ This tagger will allow you to tag text data in a text file (or a number of text 
 ## Add Semantic Tags
 Once your texts have been uploaded, you can begin to add semantic tags to the texts and analyse them using the tools included in the notebook. You can display the semantic tags, the pos-tagging and the MWE indicator for each token in a particular text, and compared them side by side with those from another text.
 
-<img width='740' src='./img/text_analysis_chinese.png'/>  
-<img width='740' src='./img/stats_chinese.png'/>  
+<img width='740' src='./img/text_analysis_ch.png'/>  
+<img width='740' src='./img/stats_ch.png'/>  
 
 You can also compare the top-n statistics between texts (or all texts in the corpus) in the below charts.  
   
-<img width='740' src='./img/stats_analysis_chinese.png'/>  
+<img width='740' src='./img/stats_analysis_ch.png'/>  
 
 Lastly, you can save the tagged texts onto an excel spreadsheet and download it to your local computer.  
 
-<img width='740' src='./img/save_output_chinese.png'/> 
+<img width='740' src='./img/save_output_ch.png'/> 
 
 ## Reference
 This code has been adapted from the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) and modified to run on a Jupyter Notebook. PyMUSAS is an open-source project that has been created and funded by the [University Centre for Computer Corpus Research on Language (UCREL)](https://ucrel.lancs.ac.uk/) at [Lancaster University](https://www.lancaster.ac.uk/). For more information about PyMUSAS, please visit [the Usage Guides page](https://ucrel.github.io/pymusas/).
