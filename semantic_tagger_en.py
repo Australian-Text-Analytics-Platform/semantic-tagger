@@ -1445,7 +1445,7 @@ class SemanticTagger():
         n_option = widgets.BoundedIntText(
             value=value,
             min=0,
-            #max=len(self.text_df),
+            max=len(self.text_df)+1,
             step=5,
             description='',
             disabled=False,
