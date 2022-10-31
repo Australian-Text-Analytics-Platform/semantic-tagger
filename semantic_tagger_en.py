@@ -29,11 +29,11 @@ import numpy as np
 
 # matplotlib: visualization tool
 from matplotlib import pyplot as plt
-from matplotlib import font_manager
+#from matplotlib import font_manager
 
 # spaCy and NLTK: natural language processing tools for working with language/text data
 import spacy
-from spacy.tokens import Doc
+#from spacy.tokens import Doc
 import nltk
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
@@ -83,7 +83,7 @@ class SemanticTagger():
         self.mwe_count = 0
         self.text_df = None
         self.tagged_df = None
-        self.large_file_size = 1000000
+        self.large_file_size=1000000
         self.token_to_display=500
         self.max_to_process = 1000
         self.cpu_count = joblib.cpu_count()
@@ -438,8 +438,8 @@ class SemanticTagger():
         Args:
             temp_df: the temporary pandas dataframe containing the text data
         '''
-        #temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.md5(t.encode('utf-8')).hexdigest())
-        temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.shake_128(t.encode('utf-8')).hexdigest(4))
+        temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.md5(t.encode('utf-8')).hexdigest())
+        #temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.shake_128(t.encode('utf-8')).hexdigest(4))
         
         return temp_df
     
@@ -865,44 +865,6 @@ class SemanticTagger():
         return vbox
         
         
-    def save_tag_text(self, 
-                      start_index: int, 
-                      end_index: int):
-        '''
-        Function to save tagged texts into an excel spreadsheet using text_name as the sheet name
-
-        Args:
-            start_index: the start index of the text to be saved
-            end_index: the end index of the text to be saved
-        '''
-        # define the file_name
-        file_name = 'tagged_text_{}_to_{}.xlsx'.format(start_index, min(end_index,len(self.text_df)))
-        
-        # open an excel workbook
-        wb = Workbook()
-        
-        # empty variables to check duplicate name sheets
-        sheet_names = []; n=0
-        
-        # tag texts and save to new sheets in the excel spreadsheet
-        for text in tqdm(self.text_df[start_index:end_index].itertuples(), total=len(self.text_df[start_index:end_index])):
-            try:
-                tagged_text = self.tagged_df[self.tagged_df['text_id']==text.text_id].iloc[:,2:]
-                sheet_name = text.text_name[:10]
-                if sheet_name in sheet_names:
-                    sheet_name += str(n)
-                    n+=1
-                sheet_names.append(sheet_name)
-                values = [tagged_text.columns] + list(tagged_text.values)
-                wb.new_sheet(sheet_name, data=values)
-            except:
-                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(text.text_name))
-        
-        # save the excel spreadsheet
-        wb.save(file_name)
-        print('Semantic tags successfully added and saved into {}!'.format(file_name))
-    
-    
     def top_entities(self, 
                      count_ent: dict, 
                      top_n: int) -> dict:
@@ -1251,6 +1213,81 @@ class SemanticTagger():
         hbox = widgets.HBox([vbox1, vbox2])
         
         return hbox
+    
+    
+    def save_to_csv(self, 
+                    out_dir: str,
+                    file_name: str):
+        '''
+        Function to save tagged texts to csv file
+        
+        Args:
+            out_dir: the output file directory
+            file_name: the name of teh saved file
+        '''
+        # split into chunks
+        chunks = np.array_split(self.tagged_df.index, len(self.text_df)) 
+        
+        # save the tagged text into csv
+        for chunck, subset in enumerate(tqdm(chunks)):
+            if chunck == 0:
+                self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
+                                                  mode='w', 
+                                                  index=True)
+            else:
+                self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
+                                                  header=None, 
+                                                  mode='a', 
+                                                  index=True)
+    
+    
+    def save_to_xml(self, 
+                    out_dir: str,
+                    file_name: str):
+        '''
+        Function to save tagged texts to zip of txt (pseudo-xml) file
+        
+        Args:
+            out_dir: the output file directory
+            file_name: the name of teh saved file
+        '''
+        # create a directory for saving .txt files
+        os.makedirs('./output/saved_files', exist_ok=True)
+        
+        # save tagged texts
+        for text in tqdm(self.tagged_df.text_name.unique()):
+            this_text = []
+            for n, row in enumerate(self.tagged_df[self.tagged_df['text_name']==text].itertuples()):
+                if self.mwe=='yes':
+                    pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}" mwe="{}">{}</w>'.format(n, 
+                                                                                          row.pos, 
+                                                                                          row.usas_tags[0], 
+                                                                                          row.usas_tags_def[0], 
+                                                                                          row.mwe, 
+                                                                                          row.token)
+                else:
+                    pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}">{}</w>'.format(n, 
+                                                                                 row.pos, 
+                                                                                 row.usas_tags[0], 
+                                                                                 row.usas_tags_def[0], 
+                                                                                 row.token)
+                this_text.append(pseudo_xml)
+            with open('./output/saved_files/{}.txt'.format(text), 'w') as f:
+                f.write('\n'.join(this_text))
+        
+        def zipdir(path, ziph):
+            # ziph is zipfile handle
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    ziph.write(os.path.join(root, file), 
+                               os.path.relpath(os.path.join(root, file), 
+                                               os.path.join(path, '..')))
+        
+        with zipfile.ZipFile(out_dir+file_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipdir('./output/saved_files/', zipf)
+
+        # remove files and directory once finished
+        os.system('rm -r ./output/saved_files')
         
     
     def save_options(self):
@@ -1274,77 +1311,21 @@ class SemanticTagger():
             with process_out:
                 clear_output()
                 save_type = select_save.value
+                out_dir = './output'
                 
+                print('Saving tagged texts.')
+                print('The counter will start soon. Please be patient...')
+
                 if save_type =='csv':
-                    # split into chunks
-                    chunks = np.array_split(self.tagged_df.index, len(self.text_df)) 
-                    out_dir = './output'
                     file_name = 'tagged_texts.csv'
-                    
-                    print('Saving tagged texts.')
-                    print('The counter will start soon. Please be patient...')
-
-                    # save the tagged text into csv
-                    for chunck, subset in enumerate(tqdm(chunks)):
-                        if chunck == 0:
-                            self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
-                                                              mode='w', 
-                                                              index=True)
-                        else:
-                            self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
-                                                              header=None, 
-                                                              mode='a', 
-                                                              index=True)
-                    display(DownloadFileLink(out_dir+file_name, file_name))
-                
+                    self.save_to_csv(out_dir, file_name)
                 else:
-                    # create a directory for saving .txt files
-                    os.makedirs('./output/saved_files', exist_ok=True)
-                    
-                    print('Saving tagged texts.')
-                    print('The counter will start soon. Please be patient...')
-                    
-                    # save tagged texts
-                    for text in tqdm(self.tagged_df.text_name.unique()):
-                        this_text = []
-                        for n, row in enumerate(self.tagged_df[self.tagged_df['text_name']==text].itertuples()):
-                            if self.mwe=='yes':
-                                pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}" mwe="{}">{}</w>'.format(n, 
-                                                                                                      row.pos, 
-                                                                                                      row.usas_tags[0], 
-                                                                                                      row.usas_tags_def[0], 
-                                                                                                      row.mwe, 
-                                                                                                      row.token)
-                            else:
-                                pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}">{}</w>'.format(n, 
-                                                                                             row.pos, 
-                                                                                             row.usas_tags[0], 
-                                                                                             row.usas_tags_def[0], 
-                                                                                             row.token)
-                            this_text.append(pseudo_xml)
-                        with open('./output/saved_files/{}.txt'.format(text), 'w') as f:
-                            f.write('\n'.join(this_text))
-                    
-                    def zipdir(path, ziph):
-                        # ziph is zipfile handle
-                        for root, dirs, files in os.walk(path):
-                            for file in files:
-                                ziph.write(os.path.join(root, file), 
-                                           os.path.relpath(os.path.join(root, file), 
-                                                           os.path.join(path, '..')))
-                    
-                    out_dir = './output'
                     file_name = 'tagged_texts.zip'
+                    self.save_to_xml(out_dir, file_name)
                     
-                    with zipfile.ZipFile(out_dir+file_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                        zipdir('./output/saved_files/', zipf)
-
-                    # remove files and directory once finished
-                    os.system('rm -r ./output/saved_files')
-                    print('Tagged texts saved. Click below to download:')
-                    
-                    # download the zip file onto your computer
-                    display(DownloadFileLink(out_dir+file_name, file_name))
+                # download the saved file onto your computer
+                print('Tagged texts saved. Click below to download:')
+                display(DownloadFileLink(out_dir+file_name, file_name))
                     
         # link the top_button with the function
         process_button.on_click(on_process_button_clicked)
