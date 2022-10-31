@@ -12,6 +12,7 @@ import io
 import os
 import sys
 from tqdm import tqdm
+import zipfile
 from zipfile import ZipFile
 from pyexcelerate import Workbook
 from collections import Counter
@@ -19,10 +20,12 @@ from pathlib import Path
 import re
 import joblib
 import warnings
+warnings.filterwarnings("ignore")
 import itertools
 
-# pandas: tools for data processing
+# numpy and pandas: tools for data processing
 import pandas as pd
+import numpy as np
 
 # matplotlib: visualization tool
 from matplotlib import pyplot as plt
@@ -228,7 +231,7 @@ class SemanticTagger():
             warnings.filterwarnings("default")
             self.mwe_count+=1
         else:
-            print('\nSemantic tagger has been loaded and ready for use.')
+            print('\nSemantic tagger has been loaded and is ready for use.')
             print('Please re-start the kernel if you wish to select a different option (at the top, select Kernel - Restart).')
     
     
@@ -263,7 +266,7 @@ class SemanticTagger():
         
         enter_text2 = widgets.HTML(
             value = '<b><font size=2.5>Warning:</b> including mwe extraction will make the process much slower. \
-                For corpus >500 texts, we recommend choosing the non-MWE version</b>',
+                For a corpus >500 texts, we recommend choosing the non-MWE version</b>',
             #value='<b>Warning:</b> including mwe extraction will make the process much slower.',
             placeholder='',
             description=''
@@ -297,11 +300,11 @@ class SemanticTagger():
                 select_language.options = [language]
                 
                 if self.mwe=='no':
-                    enter_text.value = 'Semantic tagger without MWE extraction has been loaded and ready for use.'
+                    enter_text.value = 'Semantic tagger without MWE extraction has been loaded and is ready for use.'
                     enter_text2.value=''
                     mwe_selection.options=['no']
                 else:
-                    enter_text.value = 'Semantic tagger with MWE extraction has been loaded and ready for use.'
+                    enter_text.value = 'Semantic tagger with MWE extraction has been loaded and is ready for use.'
                     mwe_selection.options=['yes']
                 
                 
@@ -659,6 +662,7 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
+                            #'sem':token._.pymusas_tags,
                             'usas_tags': self.usas_tags_def(token)[0],
                             'usas_tags_def': self.usas_tags_def(token)[1],
                             'mwe': self.check_mwe(token),
@@ -670,6 +674,7 @@ class SemanticTagger():
                             'text_id':text_id,
                             'token':token.text,
                             'pos':token.pos_,
+                            #'sem':token._.pymusas_tags,
                             'usas_tags': self.usas_tags_def(token)[0], 
                             'usas_tags_def': self.usas_tags_def(token)[1], 
                             'lemma':token.lemma_,
@@ -879,44 +884,6 @@ class SemanticTagger():
         return vbox
         
         
-    def save_tag_text(self, 
-                      start_index: int, 
-                      end_index: int):
-        '''
-        Function to save tagged texts into an excel spreadsheet using text_name as the sheet name
-
-        Args:
-            start_index: the start index of the text to be saved
-            end_index: the end index of the text to be saved
-        '''
-        # define the file_name
-        file_name = 'tagged_text_{}_to_{}.xlsx'.format(start_index, min(end_index,len(self.text_df)))
-        
-        # open an excel workbook
-        wb = Workbook()
-        
-        # empty variables to check duplicate name sheets
-        sheet_names = []; n=0
-        
-        # tag texts and save to new sheets in the excel spreadsheet
-        for text in tqdm(self.text_df[start_index:end_index].itertuples(), total=len(self.text_df[start_index:end_index])):
-            try:
-                tagged_text = self.tagged_df[self.tagged_df['text_id']==text.text_id].iloc[:,2:]
-                sheet_name = text.text_name[:10]
-                if sheet_name in sheet_names:
-                    sheet_name += str(n)
-                    n+=1
-                sheet_names.append(sheet_name)
-                values = [tagged_text.columns] + list(tagged_text.values)
-                wb.new_sheet(sheet_name, data=values)
-            except:
-                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(text.text_name))
-        
-        # save the excel spreadsheet
-        wb.save(file_name)
-        print('Semantic tags successfully added and saved into {}!'.format(file_name))
-    
-    
     def top_entities(self, 
                      count_ent: dict, 
                      top_n: int) -> dict:
@@ -1259,22 +1226,102 @@ class SemanticTagger():
                              layout = widgets.Layout(width='250px', height='250px'))
         
         hbox2 = widgets.HBox([vbox3, vbox4])
-        vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
-                            layout = widgets.Layout(width='500px'))
+        #vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
+        vbox = widgets.VBox([hbox1, hbox2, save_out],
+                            layout = widgets.Layout(width='900px'))
+                            #layout = widgets.Layout(width='500px'))
         
-        return vbox
+        return vbox, analyse_out, analyse_top_out
     
     
     def analyse_two_tags(self):
         '''
         Function to display options for comparing text analysis
         '''
-        vbox1 = self.analyse_tags()
-        vbox2 = self.analyse_tags()
+        vbox1, analyse_out1, analyse_top_out1 = self.analyse_tags()
+        vbox2, analyse_out2, analyse_top_out2 = self.analyse_tags()
         
         hbox = widgets.HBox([vbox1, vbox2])
+        vbox1 = widgets.VBox([analyse_out1, analyse_top_out1])
+        vbox2 = widgets.VBox([analyse_out2, analyse_top_out2])
+        vbox = widgets.VBox([hbox, vbox1, vbox2])
         
-        return hbox
+        return vbox
+        
+    
+    def save_to_csv(self, 
+                    out_dir: str,
+                    file_name: str):
+        '''
+        Function to save tagged texts to csv file
+        
+        Args:
+            out_dir: the output file directory
+            file_name: the name of teh saved file
+        '''
+        # split into chunks
+        chunks = np.array_split(self.tagged_df.index, len(self.text_df)) 
+        
+        # save the tagged text into csv
+        for chunck, subset in enumerate(tqdm(chunks)):
+            if chunck == 0:
+                self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
+                                                  mode='w', 
+                                                  index=True)
+            else:
+                self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
+                                                  header=None, 
+                                                  mode='a', 
+                                                  index=True)
+    
+    
+    def save_to_xml(self, 
+                    out_dir: str,
+                    file_name: str):
+        '''
+        Function to save tagged texts to zip of txt (pseudo-xml) file
+        
+        Args:
+            out_dir: the output file directory
+            file_name: the name of teh saved file
+        '''
+        # create a directory for saving .txt files
+        os.makedirs('./output/saved_files', exist_ok=True)
+        
+        # save tagged texts
+        for text in tqdm(self.tagged_df.text_name.unique()):
+            this_text = []
+            for n, row in enumerate(self.tagged_df[self.tagged_df['text_name']==text].itertuples()):
+                if self.mwe=='yes':
+                    pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}" mwe="{}">{}</w>'.format(n, 
+                                                                                          row.pos, 
+                                                                                          row.usas_tags[0], 
+                                                                                          row.usas_tags_def[0], 
+                                                                                          row.mwe, 
+                                                                                          row.token)
+                else:
+                    pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}">{}</w>'.format(n, 
+                                                                                 row.pos, 
+                                                                                 row.usas_tags[0], 
+                                                                                 row.usas_tags_def[0], 
+                                                                                 row.token)
+                this_text.append(pseudo_xml)
+            with open('./output/saved_files/{}.txt'.format(text), 'w') as f:
+                f.write('\n'.join(this_text))
+        
+        def zipdir(path, ziph):
+            # ziph is zipfile handle
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    ziph.write(os.path.join(root, file), 
+                               os.path.relpath(os.path.join(root, file), 
+                                               os.path.join(path, '..')))
+        
+        with zipfile.ZipFile(out_dir+file_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipdir('./output/saved_files/', zipf)
+
+        # remove files and directory once finished
+        os.system('rm -r ./output/saved_files')
         
     
     def save_options(self):
@@ -1282,40 +1329,11 @@ class SemanticTagger():
         options for saving tagged texts
         '''
         warnings.filterwarnings("ignore")
-        # widget to display instruction
-        enter_text = widgets.HTML(
-            value='<b>Select the tagged texts to save (up to {} texts at a time):</b>'.format(self.max_to_process),
-            placeholder='',
-            description=''
-            )
         
-        # widgets for selecting the number of texts to process in each batch
-        enter_start_n, start_n = self.select_n_widget('Start index:', 0)
-        enter_end_n, end_n = self.select_n_widget('End index:', 50)
-        
-        # the output after clicking the button
-        text_out = widgets.Output()
-        
-        with text_out:
-            batch_size = end_n.value - start_n.value
-            pd.set_option('display.max_rows', self.max_to_process)
-            
-            # display texts to be saved
-            display(self.text_df[start_n.value:end_n.value])
-            
-        # give notification when file is uploaded
-        def _cb(change):
-            with text_out:
-                clear_output()
-                if (end_n.value-start_n.value)>self.max_to_process:
-                    print('You can select only up to 50 texts. Please revise the start/end index.')
-                else:
-                    pd.set_option('display.max_rows', self.max_to_process)
-                    display(self.text_df[start_n.value:end_n.value])
-            
-        # observe when file is uploaded and display output
-        start_n.observe(_cb, names='value')
-        end_n.observe(_cb, names='value')
+        # widget to select save options
+        enter_save, select_save = self.select_options('<b>Select saving file type:</b>',
+                                                      ['csv', 'pseudo-XML'],
+                                                      'csv')
         
         # widget to process texts
         process_button, process_out = self.click_button_widget(desc='Save tagged texts', 
@@ -1326,35 +1344,33 @@ class SemanticTagger():
         def on_process_button_clicked(_):
             with process_out:
                 clear_output()
+                save_type = select_save.value
+                out_dir = './output'
                 
-                if (end_n.value-start_n.value)<=self.max_to_process:
-                    # process selected texts
-                    self.save_tag_text(start_n.value, end_n.value)
-                    print('text index {} to {} have been processed. Click below to download:'.format(start_n.value, end_n.value))
-                    
-                    # download the excel spreadsheet onto your computer
-                    file_name = 'tagged_text_{}_to_{}.xlsx'.format(start_n.value, min(end_n.value,len(self.text_df)))
-                    display(DownloadFileLink(file_name, file_name))
-                    
-                    # change index values to save the next batch
-                    start_n.value = end_n.value+1
-                    end_n.value = min((start_n.value + self.max_to_process),
-                                      (len(self.text_df)-(end_n.value-start_n.value)-1))
+                print('Saving tagged texts.')
+                print('The counter will start soon. Please be patient...')
+
+                if save_type =='csv':
+                    file_name = 'tagged_texts.csv'
+                    self.save_to_csv(out_dir, file_name)
                 else:
-                    print('You can select only up to {} texts. Please revise the start/end index.'.format(self.max_to_process))
+                    file_name = 'tagged_texts.zip'
+                    self.save_to_xml(out_dir, file_name)
+                    
+                # download the saved file onto your computer
+                print('Tagged texts saved. Click below to download:')
+                display(DownloadFileLink(out_dir+file_name, file_name))
                     
         # link the top_button with the function
         process_button.on_click(on_process_button_clicked)
         
         # displaying inputs, buttons and their outputs
-        vbox1 = widgets.VBox([enter_text, 
-                              enter_start_n, start_n,
-                              enter_end_n, end_n], 
-                             layout = widgets.Layout(width='600px', height='170px'))
+        vbox1 = widgets.VBox([enter_save, select_save], 
+                             layout = widgets.Layout(width='600px', height='80px'))
         vbox2 = widgets.VBox([process_button, process_out],
-                             layout = widgets.Layout(width='600px'))#, height='80px'))
+                             layout = widgets.Layout(width='600px'))
         
-        vbox = widgets.VBox([vbox1, vbox2, text_out])
+        vbox = widgets.VBox([vbox1, vbox2])
         
         return vbox
     
