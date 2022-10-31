@@ -1197,22 +1197,27 @@ class SemanticTagger():
                              layout = widgets.Layout(width='250px', height='250px'))
         
         hbox2 = widgets.HBox([vbox3, vbox4])
-        vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
-                            layout = widgets.Layout(width='500px'))
+        #vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
+        vbox = widgets.VBox([hbox1, hbox2, save_out],
+                            layout = widgets.Layout(width='900px'))
+                            #layout = widgets.Layout(width='500px'))
         
-        return vbox
+        return vbox, analyse_out, analyse_top_out
     
     
     def analyse_two_tags(self):
         '''
         Function to display options for comparing text analysis
         '''
-        vbox1 = self.analyse_tags()
-        vbox2 = self.analyse_tags()
+        vbox1, analyse_out1, analyse_top_out1 = self.analyse_tags()
+        vbox2, analyse_out2, analyse_top_out2 = self.analyse_tags()
         
         hbox = widgets.HBox([vbox1, vbox2])
+        vbox1 = widgets.VBox([analyse_out1, analyse_top_out1])
+        vbox2 = widgets.VBox([analyse_out2, analyse_top_out2])
+        vbox = widgets.VBox([hbox, vbox1, vbox2])
         
-        return hbox
+        return vbox
     
     
     def save_to_csv(self, 
