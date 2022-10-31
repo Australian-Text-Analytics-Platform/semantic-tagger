@@ -1228,7 +1228,7 @@ class SemanticTagger():
         hbox2 = widgets.HBox([vbox3, vbox4])
         #vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
         vbox = widgets.VBox([hbox1, hbox2, save_out],
-                            layout = widgets.Layout(width='900px'))
+                            layout = widgets.Layout(width='500px'))
                             #layout = widgets.Layout(width='500px'))
         
         return vbox, analyse_out, analyse_top_out
