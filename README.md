@@ -49,7 +49,7 @@ Lastly, you can save the tagged texts onto a comma separated values (csv) file c
 csv format  
 <img width='740' src='./img/csv_file.png'/>  
 
-Pseudo-xml format  
+pseudo-xml format  
 <img width='500' src='./img/pseudo_xml.png'/>  
 
 ## Reference
