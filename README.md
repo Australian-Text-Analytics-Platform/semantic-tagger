@@ -44,9 +44,10 @@ You can also compare the top-n statistics between texts (or all texts in the cor
   
 <img width='740' src='./img/stats_analysis_ch.png'/>  
 
-Lastly, you can save the tagged texts onto an excel spreadsheet and download it to your local computer.  
+Lastly, you can save the tagged texts onto a comma separated values (csv) file containing the tagged texts, or a zip of pseudo-xml (.txt) tagged text files and download it to your local computer.  
 
-<img width='740' src='./img/save_output_ch.png'/> 
+<img width='740' src='./img/csv_file.png'/> 
+<img width='740' src='./img/pseudo-xml.png'/> 
 
 ## Reference
 This code has been adapted from the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) and modified to run on a Jupyter Notebook. PyMUSAS is an open-source project that has been created and funded by the [University Centre for Computer Corpus Research on Language (UCREL)](https://ucrel.lancs.ac.uk/) at [Lancaster University](https://www.lancaster.ac.uk/). For more information about PyMUSAS, please visit [the Usage Guides page](https://ucrel.github.io/pymusas/).
