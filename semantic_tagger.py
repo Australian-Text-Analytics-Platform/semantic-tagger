@@ -1470,7 +1470,8 @@ class SemanticTagger():
         
     def select_n_widget(self, 
                         instruction: str, 
-                        value: int):
+                        value: int,
+                        max_v: int=1e+3):
         '''
         Create widgets for selecting the number of entities to display
         
@@ -1489,7 +1490,7 @@ class SemanticTagger():
         n_option = widgets.BoundedIntText(
             value=value,
             min=0,
-            max=len(self.text_df)+1,
+            max=max_v,
             step=5,
             description='',
             disabled=False,
