@@ -649,7 +649,9 @@ class SemanticTagger():
                             'usas_tags_def': self.usas_tags_def(token)[1],
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
-                            'sentence':self.highlight_sentence(token)} for token in doc]
+                            'sentence':self.highlight_sentence(token),
+                            'start_index': token._.pymusas_mwe_indexes[0][0],
+                            'end_index': token._.pymusas_mwe_indexes[0][1]} for token in doc]
         else:
             # extract the semantic tag for each token
             tagged_text = [{'text_name':text_name,
@@ -659,7 +661,9 @@ class SemanticTagger():
                             'usas_tags': self.usas_tags_def(token)[0], 
                             'usas_tags_def': self.usas_tags_def(token)[1], 
                             'lemma':token.lemma_,
-                            'sentence':self.highlight_sentence(token)} for token in doc]
+                            'sentence':self.highlight_sentence(token),
+                            'start_index': token._.pymusas_mwe_indexes[0][0],
+                            'end_index': token._.pymusas_mwe_indexes[0][1]} for token in doc]
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
@@ -795,9 +799,9 @@ class SemanticTagger():
                 if inc_usas==('all',) and inc_pos==('all',) and inc_mwe==('all',):
                     # only displays the first n tokens, with n defined by self.token_to_display
                     print('The below table shows the first {} tokens only. Use the above filter to show tokens with specific tags.'.format(self.token_to_display))
-                    df_html = self.df[left_right].head(self.token_to_display).to_html(escape=False)
+                    df_html = self.df[left_right].head(self.token_to_display).iloc[:,:-2].to_html(escape=False)
                 else:
-                    df_html = self.df[left_right].to_html(escape=False)
+                    df_html = self.df[left_right].iloc[:,:-2].to_html(escape=False)
                 
                 # Concatenating to single string
                 df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
@@ -1318,7 +1322,7 @@ class SemanticTagger():
             with process_out:
                 clear_output()
                 save_type = select_save.value
-                out_dir = './output'
+                out_dir = './output/'
                 
                 print('Saving tagged texts.')
                 print('The counter will start soon. Please be patient...')
