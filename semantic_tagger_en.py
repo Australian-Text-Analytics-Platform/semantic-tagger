@@ -1167,10 +1167,9 @@ class SemanticTagger():
                     print('Analysis saved! Click below to download:')
                     # save the bar charts as jpg files
                     for fig, bar_title in self.figs:
-                        bar_title = bar_title.split()
-                        new_bar_title = bar_title[:-4] + bar_title[-2:]
-                        new_bar_title = [title.strip('"').strip('/') for title in new_bar_title]
-                        file_name = '-'.join(new_bar_title) + '.jpg'
+                        bar_title = ' '.join(bar_title.split('/'))
+                        bar_title = ' '.join(bar_title.split('"'))
+                        file_name = '-'.join(bar_title.split()) + '.jpg'
                         fig.savefig(out_dir+file_name, bbox_inches='tight')
                         display(DownloadFileLink(out_dir+file_name, file_name))
                     
