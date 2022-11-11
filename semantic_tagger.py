@@ -1281,6 +1281,23 @@ class SemanticTagger():
                                                   index=True)
     
     
+    def save_to_excel(self, 
+                      out_dir: str,
+                      file_name: str):
+        '''
+        Function to save analysis into an excel spreadsheet and download to local computer
+
+        Args:
+            out_dir: the name of the output directory.
+            file_name: the name of the saved file 
+        '''
+        # save tagged texts onto an Excel spreadsheet
+        values = [self.tagged_df.columns] + list(self.tagged_df.values)
+        wb = Workbook()
+        wb.new_sheet(sheet_name='tagged_texts', data=values)
+        wb.save(out_dir + file_name)
+        
+        
     def save_to_xml(self, 
                     out_dir: str,
                     file_name: str):
@@ -1338,8 +1355,8 @@ class SemanticTagger():
         
         # widget to select save options
         enter_save, select_save = self.select_options('<b>Select saving file type:</b>',
-                                                      ['csv', 'pseudo-XML'],
-                                                      'csv')
+                                                      ['excel', 'pseudo-XML'],
+                                                      'excel')
         
         # widget to process texts
         process_button, process_out = self.click_button_widget(desc='Save tagged texts', 
@@ -1353,12 +1370,11 @@ class SemanticTagger():
                 save_type = select_save.value
                 out_dir = './output/'
                 
-                print('Saving tagged texts.')
-                print('The counter will start soon. Please be patient...')
-
-                if save_type =='csv':
-                    file_name = 'tagged_texts.csv'
-                    self.save_to_csv(out_dir, file_name)
+                print('Saving tagged texts in progress. Please be patient...')
+                
+                if save_type =='excel':
+                    file_name = 'tagged_texts.xlsx'
+                    self.save_to_excel(out_dir, file_name)
                 else:
                     file_name = 'tagged_texts.zip'
                     self.save_to_xml(out_dir, file_name)
