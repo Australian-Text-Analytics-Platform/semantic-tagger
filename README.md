@@ -7,9 +7,9 @@ In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (PO
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
 
-<b>Note:</b> Please try to use the first link to access the tool via BinderHub (up to 8GB memory). You can use either your AAF, Microsoft or Google credentials to login. 
+<b>Note:</b> Please try to use the first link to access the tool via BinderHub (up to 8GB memory). You can use either your university account, Microsoft or Google credentials to login. 
 
-1. This link is for people with Australian Institute Affiliations (authentication required)  
+1. The link below requires authentication, please sign in with your institutional accounts through CILogon system. If you are having difficulty with your institutional accounts, please also try your personal Google or Microsoft account.  
 [![Binder](https://binderhub.atap-binder.cloud.edu.au/badge_logo.svg)](https://binderhub.atap-binder.cloud.edu.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/multi-lingual?labpath=semantic_tagger.ipynb)    
 
 If you are unable to access the tool via the first link above, then use the second link below. This is the free version of Binder, with less CPU and memory capacity (up to 2GB only).  
