@@ -7,17 +7,11 @@ In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (PO
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
 
-<b>Note:</b> Please try to use the first link to access the tool via BinderHub (up to 8GB memory). You can use either your AAF, Microsoft or Google credentials to login. 
-
-1. This link is for people with Australian Institute Affiliations (authentication required)  
 [![Binder](https://binderhub.atap-binder.cloud.edu.au/badge_logo.svg)](https://binderhub.atap-binder.cloud.edu.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)    
 
-If you are unable to access the tool via the first link above, then use the second link below. This is the free version of Binder, with less CPU and memory capacity (up to 2GB only).  
+<b>Note:</b> CILogon authentication is required. You can use your institutional, Google or Microsoft account to login.  
 
-2. This link is for people without Australian institutional affiliations  
-<<..Under maintenance..>>   
-
-<b>Note:</b> this may take a few minutes to launch as Binder needs to install the dependencies for the tool.
+It may take a few minutes for Binder to launch the notebook and install the dependencies for the tool. Please be patient.  
 
 ## Languages
 This Semantic Tagger supports English language. For Chinese, Italian and Spanish, please visit [this page](https://github.com/Australian-Text-Analytics-Platform/semantic-tagger/tree/multi-lingual) or refer to the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) for other languages.
