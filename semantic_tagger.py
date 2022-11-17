@@ -516,13 +516,14 @@ class SemanticTagger():
         
         def clean_text(text):
             '''
-            Function to get spaCy text
+            Function to clean the text
 
             Args:
-                text: the text to be processed by spaCy
+                text: the text to be cleaned
             '''
             # clean empty spaces in the text
             text = sent_tokenize(text)
+            text = [re.sub(r'\n','', t) for t in text]
             text = ' '.join(text)
             
             return text
