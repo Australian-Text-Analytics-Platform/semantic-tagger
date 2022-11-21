@@ -1350,7 +1350,7 @@ class SemanticTagger():
         
         # widget to select save options
         enter_save, select_save = self.select_options('<b>Select saving file type:</b>',
-                                                      ['excel', 'pseudo-XML'],
+                                                      ['excel', 'csv', 'pseudo-XML'],
                                                       'excel')
         
         # widget to process texts
@@ -1370,6 +1370,9 @@ class SemanticTagger():
                 if save_type =='excel':
                     file_name = 'tagged_texts.xlsx'
                     self.save_to_excel(out_dir, file_name)
+                elif save_type =='csv':
+                    file_name = 'tagged_texts.csv'
+                    self.save_to_csv(out_dir, file_name)
                 else:
                     file_name = 'tagged_texts.zip'
                     self.save_to_xml(out_dir, file_name)
