@@ -706,12 +706,6 @@ class SemanticTagger():
         for n, doc in enumerate(tqdm(self.nlp.pipe(self.text_df['text'].to_list(),
                                                 n_process=n_process),
                                   total=len(self.text_df))):
-            text_name = self.text_df.text_name[self.text_df.index[n]]
-            text_id = self.text_df.text_id[self.text_df.index[n]]
-            tagged_text = self.add_tagger(text_name, 
-                                          text_id, 
-                                          doc)
-            self.tagged_df = pd.concat([self.tagged_df,tagged_text])
             try:
                 text_name = self.text_df.text_name[self.text_df.index[n]]
                 text_id = self.text_df.text_id[self.text_df.index[n]]
