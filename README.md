@@ -11,7 +11,7 @@ This tool has been designed for use with minimal setup from users. You are able 
 
 <b>Note:</b> CILogon authentication is required. You can use your institutional, Google or Microsoft account to login.  
 
-If you do not have any of the above accounts, you can access the tool via the below link (this is a free Binder version, limited to 2GB memory only).  
+If you do not have access to any of the above accounts, you can use the below link to access the tool (this is a free Binder version, limited to 2GB memory only).  
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)  
 
