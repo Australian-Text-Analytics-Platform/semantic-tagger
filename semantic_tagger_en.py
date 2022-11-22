@@ -117,25 +117,25 @@ class SemanticTagger():
         # give notification when file is uploaded
         def _cb(change):
             with self.upload_out:
-                # clear output and give notification that file is being uploaded
-                clear_output()
-                
-                # check file size
-                self.check_file_size(self.file_uploader)
-                
-                # reading uploaded files
-                self.process_upload()
+                if self.file_uploader.value!=():
+                    # clear output and give notification that file is being uploaded
+                    clear_output()
+                    
+                    # check file size
+                    self.check_file_size(self.file_uploader)
+                    
+                    # reading uploaded files
+                    self.process_upload()
+                    
+                    # give notification when uploading is finished
+                    print('Finished uploading files.')
+                    print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))
                 
                 # clear saved value in cache and reset counter
-                self.file_uploader._counter=0
-                self.file_uploader.value.clear()
-                
-                # give notification when uploading is finished
-                print('Finished uploading files.')
-                print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))
+                self.file_uploader.value = ()
             
         # observe when file is uploaded and display output
-        self.file_uploader.observe(_cb, names='data')
+        self.file_uploader.observe(_cb, names='value')
         self.upload_box = widgets.VBox([self.file_uploader, self.upload_out])
         
         # CSS styling 
@@ -291,7 +291,6 @@ class SemanticTagger():
                     enter_text.value = 'Semantic tagger with MWE extraction has been loaded and is ready for use.'
                     mwe_selection.options=['yes']
                 
-                
         # link the button with the function
         load_button.on_click(on_load_button_clicked)
         
@@ -328,21 +327,21 @@ class SemanticTagger():
         return button, out
     
     
-    def check_file_size(self, file):
+    def check_file_size(self, uploaded_file):
         '''
         Function to check the uploaded file size
         
         Args:
-            file: the uploaded file containing the text data
+            uploaded_file: the uploaded file containing the text data
         '''
         # check total uploaded file size
-        total_file_size = sum([i['metadata']['size'] for i in self.file_uploader.value.values()])
+        total_file_size = sum([file['size'] for file in uploaded_file.value])
         print('The total size of the upload is {:.2f} MB.'.format(total_file_size/1000000))
         
         # display warning for individual large files (>1MB)
-        large_text = [text['metadata']['name'] for text in self.file_uploader.value.values() \
-                      if text['metadata']['size']>self.large_file_size and \
-                          text['metadata']['name'].endswith('.txt')]
+        large_text = [file['name'] for file in uploaded_file.value \
+                      if file['size']>self.large_file_size and \
+                          file['name'].endswith('.txt')]
         if len(large_text)>0:
             print('The following file(s) are larger than 1MB:', large_text)
         
@@ -363,32 +362,35 @@ class SemanticTagger():
         # open and extract the zip file
         with ZipFile(temp, 'r') as zip:
             # extract files
-            print('Extracting {}...'.format(zip_file['metadata']['name']))
+            print('Extracting {}...'.format(zip_file['name']))
             zip.extractall('./input/')
         
         # clear up temp
         temp = None
     
     
-    def load_txt(self, file) -> list:
+    def load_txt(self, file, n) -> list:
         '''
         Load individual txt file content and return a dictionary object, 
         wrapped in a list so it can be merged with list of pervious file contents.
         
         Args:
             file: the file containing the text data
+            n: index of the uploaded file (value='unzip' if the file is extracted form a zip file
         '''
-        try:
+        # read the unzip text file
+        if n=='unzip':
             # read the unzip text file
             with open(file) as f:
                 temp = {'text_name': file.name[:-4],
                         'text': f.read()
                 }
+            
             os.remove(file)
-        except:
-            file = self.file_uploader.value[file]
+        else:
+            file = self.file_uploader.value[n]
             # read and decode uploaded text
-            temp = {'text_name': file['metadata']['name'][:-4],
+            temp = {'text_name': file['name'][:-4],
                     'text': codecs.decode(file['content'], encoding='utf-8', errors='replace')
             }
             
@@ -400,25 +402,22 @@ class SemanticTagger():
         return [temp]
 
 
-    def load_table(self, file) -> list:
+    def load_table(self, file, n) -> list:
         '''
         Load csv or xlsx file
         
         Args:
             file: the file containing the excel or csv data
+            n: index of the uploaded file (value='unzip' if the file is extracted form a zip file
         '''
-        if type(file)==str:
-            file = self.file_uploader.value[file]['content']
-
+        if n!='unzip':
+            file = io.BytesIO(self.file_uploader.value[n]['content'])
+            
         # read the file based on the file format
         try:
             temp_df = pd.read_csv(file)
         except:
             temp_df = pd.read_excel(file)
-        
-        # remove file from directory
-        if type(file)!=bytes:
-            os.remove(file)
             
         # check if the column text and text_name present in the table, if not, skip the current spreadsheet
         if ('text' not in temp_df.columns) or ('text_name' not in temp_df.columns):
@@ -439,7 +438,6 @@ class SemanticTagger():
             temp_df: the temporary pandas dataframe containing the text data
         '''
         temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.md5(t.encode('utf-8')).hexdigest())
-        #temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.shake_128(t.encode('utf-8')).hexdigest(4))
         
         return temp_df
     
@@ -452,35 +450,32 @@ class SemanticTagger():
             deduplication: option to deduplicate text_df by text_id
         '''
         # create placeholders to store all texts and zipped file names
-        all_data = []; zip_files = []
+        all_data = []; files = []
         
         # read and store the uploaded files
-        files = list(self.file_uploader.value.keys())
+        uploaded_files = self.file_uploader.value
         
         # extract zip files (if any)
-        for file in files:
-            if file.lower().endswith('zip'):
-                self.extract_zip(self.file_uploader.value[file])
-                zip_files.append(file)
-        
-        # remove zip files from the list
-        files = list(set(files)-set(zip_files))
+        for n, file in enumerate(uploaded_files):
+            files.append([file.name, n])
+            if file.name.lower().endswith('zip'):
+                self.extract_zip(self.file_uploader.value[n])
+                files.pop()
         
         # add extracted files to files
         for file_type in ['*.txt', '*.xlsx', '*.csv']:
-            files += [file for file in Path('./input').rglob(file_type) if 'MACOSX' not in str(file)]
+            files += [[file, 'unzip'] for file in Path('./input').rglob(file_type) if 'MACOSX' not in str(file)]
         
         print('Reading uploaded files...')
         print('This may take a while...')
         # process and upload files
-        for file in tqdm(files):
+        for file, n in tqdm(files):
             # process text files
             if str(file).lower().endswith('txt'):
-                text_dic = self.load_txt(file)
-                    
+                text_dic = self.load_txt(file, n)
             # process xlsx or csv files
             else:
-                text_dic = self.load_table(file)
+                text_dic = self.load_table(file, n)
             all_data.extend(text_dic)
         
         # remove files and directory once finished
@@ -491,7 +486,7 @@ class SemanticTagger():
         self.text_df = self.hash_gen(self.text_df)
         
         # clear up all_data
-        all_data = []; zip_files = []
+        all_data = []; files = []
         
         # deduplicate the text_df by text_id
         if deduplication:
@@ -1198,10 +1193,9 @@ class SemanticTagger():
                              layout = widgets.Layout(width='250px', height='250px'))
         
         hbox2 = widgets.HBox([vbox3, vbox4])
-        #vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
+        
         vbox = widgets.VBox([hbox1, hbox2, save_out],
                             layout = widgets.Layout(width='500px'))
-                            #layout = widgets.Layout(width='500px'))
         
         return vbox, analyse_out, analyse_top_out
     
