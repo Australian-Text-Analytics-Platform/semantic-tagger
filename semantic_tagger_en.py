@@ -117,22 +117,24 @@ class SemanticTagger():
         # give notification when file is uploaded
         def _cb(change):
             with self.upload_out:
-                # clear output and give notification that file is being uploaded
-                clear_output()
-                print('change')
-                # check file size
-                #self.check_file_size(self.file_uploader)
+                if self.file_uploader.value!=():
+                    # clear output and give notification that file is being uploaded
+                    clear_output()
+                    
+                    # check file size
+                    self.check_file_size(self.file_uploader)
+                    
+                    # reading uploaded files
+                    self.process_upload()
+                    
+                    
+                    
+                    # give notification when uploading is finished
+                    print('Finished uploading files.')
+                    print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))
                 
-                # reading uploaded files
-                self.process_upload()
-                '''
                 # clear saved value in cache and reset counter
-                self.file_uploader._counter=0
-                self.file_uploader.value = ()'''
-                '''
-                # give notification when uploading is finished
-                print('Finished uploading files.')
-                print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))'''
+                self.file_uploader.value = ()
             
         # observe when file is uploaded and display output
         self.file_uploader.observe(_cb, names='value')
@@ -328,21 +330,21 @@ class SemanticTagger():
         return button, out
     
     
-    def check_file_size(self, file):
+    def check_file_size(self, uploaded_file):
         '''
         Function to check the uploaded file size
         
         Args:
-            file: the uploaded file containing the text data
+            uploaded_file: the uploaded file containing the text data
         '''
         # check total uploaded file size
-        total_file_size = sum([i['metadata']['size'] for i in self.file_uploader.value.values()])
+        total_file_size = sum([file['size'] for file in uploaded_file.value])
         print('The total size of the upload is {:.2f} MB.'.format(total_file_size/1000000))
         
         # display warning for individual large files (>1MB)
-        large_text = [text['metadata']['name'] for text in self.file_uploader.value.values() \
-                      if text['metadata']['size']>self.large_file_size and \
-                          text['metadata']['name'].endswith('.txt')]
+        large_text = [file['name'] for file in uploaded_file.value \
+                      if file['size']>self.large_file_size and \
+                          file['name'].endswith('.txt')]
         if len(large_text)>0:
             print('The following file(s) are larger than 1MB:', large_text)
         
