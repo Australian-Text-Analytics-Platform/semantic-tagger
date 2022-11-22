@@ -119,23 +119,23 @@ class SemanticTagger():
             with self.upload_out:
                 # clear output and give notification that file is being uploaded
                 clear_output()
-                
+                print('change')
                 # check file size
-                self.check_file_size(self.file_uploader)
+                #self.check_file_size(self.file_uploader)
                 
                 # reading uploaded files
                 self.process_upload()
-                
+                '''
                 # clear saved value in cache and reset counter
                 self.file_uploader._counter=0
-                self.file_uploader.value.clear()
-                
+                self.file_uploader.value = ()'''
+                '''
                 # give notification when uploading is finished
                 print('Finished uploading files.')
-                print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))
+                print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))'''
             
         # observe when file is uploaded and display output
-        self.file_uploader.observe(_cb, names='data')
+        self.file_uploader.observe(_cb, names='value')
         self.upload_box = widgets.VBox([self.file_uploader, self.upload_out])
         
         # CSS styling 
@@ -363,32 +363,35 @@ class SemanticTagger():
         # open and extract the zip file
         with ZipFile(temp, 'r') as zip:
             # extract files
-            print('Extracting {}...'.format(zip_file['metadata']['name']))
+            print('Extracting {}...'.format(zip_file['name']))
             zip.extractall('./input/')
         
         # clear up temp
         temp = None
     
     
-    def load_txt(self, file) -> list:
+    def load_txt(self, file, n) -> list:
         '''
         Load individual txt file content and return a dictionary object, 
         wrapped in a list so it can be merged with list of pervious file contents.
         
         Args:
             file: the file containing the text data
+            n: whether the file is extracted form a zip file or not
         '''
-        try:
+        # read the unzip text file
+        if n=='unzip':
             # read the unzip text file
             with open(file) as f:
                 temp = {'text_name': file.name[:-4],
                         'text': f.read()
                 }
+            
             os.remove(file)
-        except:
-            file = self.file_uploader.value[file]
+        else:
+            file = self.file_uploader.value[n]
             # read and decode uploaded text
-            temp = {'text_name': file['metadata']['name'][:-4],
+            temp = {'text_name': file['name'][:-4],
                     'text': codecs.decode(file['content'], encoding='utf-8', errors='replace')
             }
             
@@ -400,25 +403,26 @@ class SemanticTagger():
         return [temp]
 
 
-    def load_table(self, file) -> list:
+    def load_table(self, file, n) -> list:
         '''
         Load csv or xlsx file
         
         Args:
             file: the file containing the excel or csv data
+            n: whether the file is extracted form a zip file or not
         '''
-        if type(file)==str:
-            file = self.file_uploader.value[file]['content']
-
+        if n!='unzip':
+            file = io.BytesIO(self.file_uploader.value[n]['content'])
+            
         # read the file based on the file format
         try:
             temp_df = pd.read_csv(file)
         except:
             temp_df = pd.read_excel(file)
-        
+        '''
         # remove file from directory
         if type(file)!=bytes:
-            os.remove(file)
+            os.remove(file)'''
             
         # check if the column text and text_name present in the table, if not, skip the current spreadsheet
         if ('text' not in temp_df.columns) or ('text_name' not in temp_df.columns):
@@ -452,35 +456,33 @@ class SemanticTagger():
             deduplication: option to deduplicate text_df by text_id
         '''
         # create placeholders to store all texts and zipped file names
-        all_data = []; zip_files = []
+        all_data = []; files = []; zip_files = []
         
         # read and store the uploaded files
-        files = list(self.file_uploader.value.keys())
+        uploaded_files = self.file_uploader.value
         
         # extract zip files (if any)
-        for file in files:
-            if file.lower().endswith('zip'):
-                self.extract_zip(self.file_uploader.value[file])
-                zip_files.append(file)
-        
-        # remove zip files from the list
-        files = list(set(files)-set(zip_files))
+        for n, file in enumerate(uploaded_files):
+            files.append([file.name, n])
+            if file.name.lower().endswith('zip'):
+                self.extract_zip(self.file_uploader.value[n])
+                files.pop()
         
         # add extracted files to files
         for file_type in ['*.txt', '*.xlsx', '*.csv']:
-            files += [file for file in Path('./input').rglob(file_type) if 'MACOSX' not in str(file)]
+            files += [[file, 'unzip'] for file in Path('./input').rglob(file_type) if 'MACOSX' not in str(file)]
         
         print('Reading uploaded files...')
         print('This may take a while...')
         # process and upload files
-        for file in tqdm(files):
+        for file, n in tqdm(files):
             # process text files
             if str(file).lower().endswith('txt'):
-                text_dic = self.load_txt(file)
+                text_dic = self.load_txt(file, n)
                     
             # process xlsx or csv files
             else:
-                text_dic = self.load_table(file)
+                text_dic = self.load_table(file, n)
             all_data.extend(text_dic)
         
         # remove files and directory once finished
