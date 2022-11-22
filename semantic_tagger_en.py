@@ -127,8 +127,6 @@ class SemanticTagger():
                     # reading uploaded files
                     self.process_upload()
                     
-                    
-                    
                     # give notification when uploading is finished
                     print('Finished uploading files.')
                     print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))
