@@ -291,7 +291,6 @@ class SemanticTagger():
                     enter_text.value = 'Semantic tagger with MWE extraction has been loaded and is ready for use.'
                     mwe_selection.options=['yes']
                 
-                
         # link the button with the function
         load_button.on_click(on_load_button_clicked)
         
@@ -377,7 +376,7 @@ class SemanticTagger():
         
         Args:
             file: the file containing the text data
-            n: whether the file is extracted form a zip file or not
+            n: index of the uploaded file (value='unzip' if the file is extracted form a zip file
         '''
         # read the unzip text file
         if n=='unzip':
@@ -409,7 +408,7 @@ class SemanticTagger():
         
         Args:
             file: the file containing the excel or csv data
-            n: whether the file is extracted form a zip file or not
+            n: index of the uploaded file (value='unzip' if the file is extracted form a zip file
         '''
         if n!='unzip':
             file = io.BytesIO(self.file_uploader.value[n]['content'])
@@ -419,10 +418,6 @@ class SemanticTagger():
             temp_df = pd.read_csv(file)
         except:
             temp_df = pd.read_excel(file)
-        '''
-        # remove file from directory
-        if type(file)!=bytes:
-            os.remove(file)'''
             
         # check if the column text and text_name present in the table, if not, skip the current spreadsheet
         if ('text' not in temp_df.columns) or ('text_name' not in temp_df.columns):
@@ -443,7 +438,6 @@ class SemanticTagger():
             temp_df: the temporary pandas dataframe containing the text data
         '''
         temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.md5(t.encode('utf-8')).hexdigest())
-        #temp_df['text_id'] = temp_df['text'].apply(lambda t: hashlib.shake_128(t.encode('utf-8')).hexdigest(4))
         
         return temp_df
     
@@ -456,7 +450,7 @@ class SemanticTagger():
             deduplication: option to deduplicate text_df by text_id
         '''
         # create placeholders to store all texts and zipped file names
-        all_data = []; files = []; zip_files = []
+        all_data = []; files = []
         
         # read and store the uploaded files
         uploaded_files = self.file_uploader.value
@@ -479,7 +473,6 @@ class SemanticTagger():
             # process text files
             if str(file).lower().endswith('txt'):
                 text_dic = self.load_txt(file, n)
-                    
             # process xlsx or csv files
             else:
                 text_dic = self.load_table(file, n)
@@ -493,7 +486,7 @@ class SemanticTagger():
         self.text_df = self.hash_gen(self.text_df)
         
         # clear up all_data
-        all_data = []; zip_files = []
+        all_data = []; files = []
         
         # deduplicate the text_df by text_id
         if deduplication:
@@ -1200,10 +1193,9 @@ class SemanticTagger():
                              layout = widgets.Layout(width='250px', height='250px'))
         
         hbox2 = widgets.HBox([vbox3, vbox4])
-        #vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
+        
         vbox = widgets.VBox([hbox1, hbox2, save_out],
                             layout = widgets.Layout(width='500px'))
-                            #layout = widgets.Layout(width='500px'))
         
         return vbox, analyse_out, analyse_top_out
     
