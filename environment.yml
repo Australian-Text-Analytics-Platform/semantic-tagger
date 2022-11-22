@@ -13,7 +13,7 @@ dependencies:
   - pandas=1.4.3
   - openpyxl=3.0.9
   - nltk=3.7
-  - ipywidgets=7.6.5
+  - ipywidgets=8.0.2
   - matplotlib=3.5.2
   - pip
   - pip:
