@@ -500,9 +500,7 @@ class SemanticTagger():
                 text: the text to be cleaned
             '''
             # clean empty spaces in the text
-            text = sent_tokenize(text)
-            text = [re.sub(r'\n','', t) for t in text]
-            text = ' '.join(text)
+            text = re.sub(r'\n','', text)
             
             return text
         
