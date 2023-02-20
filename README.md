@@ -2,7 +2,7 @@
 
 <b>Abstract:</b> with the Semantic Tagger, you can use [Python Multilingual Ucrel Semantic Analysis System (PyMUSAS)](https://ucrel.github.io/pymusas/) to tag your text so you can extract token level semantic tags from the tagged text. PyMUSAS, is a rule based token and Multi Word Expression (MWE) semantic tagger. The tagger can support any semantic tagset, however the currently released tagset is for the [UCREL Semantic Analysis System (USAS)](https://ucrel.lancs.ac.uk/usas/) semantic tags. 
 
-In addition to the USAS tags, you will also see the lemmas and Part-ofSpeech (POS) tags in the text. For these languages, the tagger can also identify and tag Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'Países Bajos'.
+In addition to the USAS tags, you will also see the lemmas and Part-of-Speech (POS) tags in the text. For these languages, the tagger can also identify and tag Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'Países Bajos'.
 
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
@@ -52,3 +52,8 @@ pseudo-xml format
 
 ## Reference
 This code has been adapted from the [PyMUSAS GitHub page](https://github.com/UCREL/pymusas) and modified to run on a Jupyter Notebook. PyMUSAS is an open-source project that has been created and funded by the [University Centre for Computer Corpus Research on Language (UCREL)](https://ucrel.lancs.ac.uk/) at [Lancaster University](https://www.lancaster.ac.uk/). For more information about PyMUSAS, please visit [the Usage Guides page](https://ucrel.github.io/pymusas/).
+
+## Citation
+If you find the Semantic Tagger (Multi-Lingual) useful in your research, please cite the following:  
+
+Jufri, Sony & Sun, Chao (2022). Semantic Tagger (Multi-Lingual). v1.0. Australian Text Analytics Platform. Software. https://github.com/Australian-Text-Analytics-Platform/semantic-tagger/tree/multi-lingual

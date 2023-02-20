@@ -1,0 +1,49 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Semantic Tagger (Multi-Lingual)
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Sony
+    family-names: Jufri
+    email: sony.jufri@sydney.edu.au
+    affiliation: >-
+      Sydney Informatics Hub, a core research facility of
+      the University of Sydney
+  - given-names: Chao
+    family-names: Sun
+    email: chao.sun@sydney.edu.au
+    affiliation: >-
+      Sydney Informatics Hub, a core research facility of
+      the University of Sydney
+repository-code: >-
+  https://github.com/Australian-Text-Analytics-Platform/semantic-tagger/tree/multi-lingual
+abstract: >-
+  The multi-lingual Semantic Tagger is an automatic semantic
+  analysis tool that you can use to tag your text so you can
+  extract token level semantic tags from the tagged text.
+  This tagger supports Chinese, Italian and Spanish
+  languages. Similar to the English version, it can support
+  any semantic tagset, however the currently released tagset
+  is for the UCREL Semantic Analysis System (USAS) semantic
+  tags. In addition to the USAS tags, you will also see the
+  lemmas and Part-of-Speech (POS) tags in the text. For
+  these languages, the tagger can also identify and tag
+  Multi Word Expressions (MWE), i.e., expressions formed by
+  two or more words that behave like a unit such as 'Países
+  Bajos'.
+keywords:
+  - semantic tag
+  - semantic
+  - semantic tagger
+  - multi-lingual
+  - Chinese
+  - Italian
+  - Spanish
+license: Apache-2.0
+version: '1.0'
+date-released: '2022-11-22'
