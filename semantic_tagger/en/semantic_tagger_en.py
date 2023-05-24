@@ -12,25 +12,28 @@ import io
 import os
 import sys
 from tqdm import tqdm
+import zipfile
 from zipfile import ZipFile
 from pyexcelerate import Workbook
 from collections import Counter
 from pathlib import Path
 import re
-import joblib
 import warnings
+warnings.filterwarnings("ignore")
+import joblib
 import itertools
 
-# pandas: tools for data processing
+# numpy and pandas: tools for data processing
 import pandas as pd
+import numpy as np
 
 # matplotlib: visualization tool
 from matplotlib import pyplot as plt
-from matplotlib import font_manager
+#from matplotlib import font_manager
 
 # spaCy and NLTK: natural language processing tools for working with language/text data
 import spacy
-from spacy.tokens import Doc
+#from spacy.tokens import Doc
 import nltk
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
@@ -80,9 +83,9 @@ class SemanticTagger():
         self.mwe_count = 0
         self.text_df = None
         self.tagged_df = None
-        self.large_file_size = 1000000
+        self.large_file_size=1000000
         self.token_to_display=500
-        self.max_to_process = 50
+        self.max_to_process = 1000
         self.cpu_count = joblib.cpu_count()
         self.selected_text = {'left': None, 'right': None}
         self.text_name = {'left': None, 'right': None}
@@ -114,25 +117,25 @@ class SemanticTagger():
         # give notification when file is uploaded
         def _cb(change):
             with self.upload_out:
-                # clear output and give notification that file is being uploaded
-                clear_output()
-                
-                # check file size
-                self.check_file_size(self.file_uploader)
-                
-                # reading uploaded files
-                self.process_upload()
+                if self.file_uploader.value!=():
+                    # clear output and give notification that file is being uploaded
+                    clear_output()
+                    
+                    # check file size
+                    self.check_file_size(self.file_uploader)
+                    
+                    # reading uploaded files
+                    self.process_upload()
+                    
+                    # give notification when uploading is finished
+                    print('Finished uploading files.')
+                    print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))
                 
                 # clear saved value in cache and reset counter
-                self.file_uploader._counter=0
-                self.file_uploader.value.clear()
-                
-                # give notification when uploading is finished
-                print('Finished uploading files.')
-                print('{} text documents are loaded for tagging.'.format(self.text_df.shape[0]))
+                self.file_uploader.value = ()
             
         # observe when file is uploaded and display output
-        self.file_uploader.observe(_cb, names='data')
+        self.file_uploader.observe(_cb, names='value')
         self.upload_box = widgets.VBox([self.file_uploader, self.upload_out])
         
         # CSS styling 
@@ -247,7 +250,7 @@ class SemanticTagger():
         
         enter_text2 = widgets.HTML(
             value = '<b><font size=2.5>Warning:</b> including mwe extraction will make the process much slower. \
-                For corpus >500 texts, we recommend choosing the non-MWE version</b>',
+                For a corpus >500 texts, we recommend choosing the non-MWE version.</b>',
             #value='<b>Warning:</b> including mwe extraction will make the process much slower.',
             placeholder='',
             description=''
@@ -281,13 +284,12 @@ class SemanticTagger():
                 select_language.options = [language]
                 
                 if self.mwe=='no':
-                    enter_text.value = 'Semantic tagger without MWE extraction has been loaded and ready for use.'
+                    enter_text.value = 'Semantic tagger without MWE extraction has been loaded and is ready for use.'
                     enter_text2.value=''
                     mwe_selection.options=['no']
                 else:
-                    enter_text.value = 'Semantic tagger with MWE extraction has been loaded and ready for use.'
+                    enter_text.value = 'Semantic tagger with MWE extraction has been loaded and is ready for use.'
                     mwe_selection.options=['yes']
-                
                 
         # link the button with the function
         load_button.on_click(on_load_button_clicked)
@@ -325,21 +327,21 @@ class SemanticTagger():
         return button, out
     
     
-    def check_file_size(self, file):
+    def check_file_size(self, uploaded_file):
         '''
         Function to check the uploaded file size
         
         Args:
-            file: the uploaded file containing the text data
+            uploaded_file: the uploaded file containing the text data
         '''
         # check total uploaded file size
-        total_file_size = sum([i['metadata']['size'] for i in self.file_uploader.value.values()])
+        total_file_size = sum([file['size'] for file in uploaded_file.value])
         print('The total size of the upload is {:.2f} MB.'.format(total_file_size/1000000))
         
         # display warning for individual large files (>1MB)
-        large_text = [text['metadata']['name'] for text in self.file_uploader.value.values() \
-                      if text['metadata']['size']>self.large_file_size and \
-                          text['metadata']['name'].endswith('.txt')]
+        large_text = [file['name'] for file in uploaded_file.value \
+                      if file['size']>self.large_file_size and \
+                          file['name'].endswith('.txt')]
         if len(large_text)>0:
             print('The following file(s) are larger than 1MB:', large_text)
         
@@ -360,66 +362,66 @@ class SemanticTagger():
         # open and extract the zip file
         with ZipFile(temp, 'r') as zip:
             # extract files
-            print('Extracting {}...'.format(zip_file['metadata']['name']))
+            print('Extracting {}...'.format(zip_file['name']))
             zip.extractall('./input/')
         
         # clear up temp
         temp = None
     
     
-    def load_txt(self, file) -> list:
+    def load_txt(self, file, n) -> list:
         '''
         Load individual txt file content and return a dictionary object, 
         wrapped in a list so it can be merged with list of pervious file contents.
         
         Args:
             file: the file containing the text data
+            n: index of the uploaded file (value='unzip' if the file is extracted form a zip file
         '''
-        try:
+        # read the unzip text file
+        if n=='unzip':
             # read the unzip text file
             with open(file) as f:
                 temp = {'text_name': file.name[:-4],
                         'text': f.read()
                 }
+            
             os.remove(file)
-        except:
-            file = self.file_uploader.value[file]
+        else:
+            file = self.file_uploader.value[n]
             # read and decode uploaded text
-            temp = {'text_name': file['metadata']['name'][:-4],
+            temp = {'text_name': file['name'][:-4],
                     'text': codecs.decode(file['content'], encoding='utf-8', errors='replace')
             }
             
             # check for unknown characters and display warning if any
             unknown_count = temp['text'].count('�')
             if unknown_count>0:
-                print('We identified {} unknown character(s) in the following text: {}'.format(unknown_count, file['metadata']['name'][:-4]))
+                print('We identified {} unknown character(s) in the following text: {}'.format(unknown_count, file['name'][:-4]))
         
         return [temp]
 
 
-    def load_table(self, file) -> list:
+    def load_table(self, file, n) -> list:
         '''
         Load csv or xlsx file
         
         Args:
             file: the file containing the excel or csv data
+            n: index of the uploaded file (value='unzip' if the file is extracted form a zip file
         '''
-        if type(file)==str:
-            file = self.file_uploader.value[file]['content']
-
+        if n!='unzip':
+            file = io.BytesIO(self.file_uploader.value[n]['content'])
+            
         # read the file based on the file format
         try:
             temp_df = pd.read_csv(file)
         except:
             temp_df = pd.read_excel(file)
-        
-        # remove file from directory
-        if type(file)!=bytes:
-            os.remove(file)
             
         # check if the column text and text_name present in the table, if not, skip the current spreadsheet
         if ('text' not in temp_df.columns) or ('text_name' not in temp_df.columns):
-            print('File {} does not contain the required header "text" and "text_name"'.format(file['metadata']['name']))
+            print('File {} does not contain the required header "text" and "text_name"'.format(self.file_uploader.value[n]['name']))
             return []
         
         # return a list of dict objects
@@ -448,35 +450,32 @@ class SemanticTagger():
             deduplication: option to deduplicate text_df by text_id
         '''
         # create placeholders to store all texts and zipped file names
-        all_data = []; zip_files = []
+        all_data = []; files = []
         
         # read and store the uploaded files
-        files = list(self.file_uploader.value.keys())
+        uploaded_files = self.file_uploader.value
         
         # extract zip files (if any)
-        for file in files:
-            if file.lower().endswith('zip'):
-                self.extract_zip(self.file_uploader.value[file])
-                zip_files.append(file)
-        
-        # remove zip files from the list
-        files = list(set(files)-set(zip_files))
+        for n, file in enumerate(uploaded_files):
+            files.append([file.name, n])
+            if file.name.lower().endswith('zip'):
+                self.extract_zip(self.file_uploader.value[n])
+                files.pop()
         
         # add extracted files to files
         for file_type in ['*.txt', '*.xlsx', '*.csv']:
-            files += [file for file in Path('./input').rglob(file_type) if 'MACOSX' not in str(file)]
+            files += [[file, 'unzip'] for file in Path('./input').rglob(file_type) if 'MACOSX' not in str(file)]
         
         print('Reading uploaded files...')
         print('This may take a while...')
         # process and upload files
-        for file in tqdm(files):
+        for file, n in tqdm(files):
             # process text files
             if str(file).lower().endswith('txt'):
-                text_dic = self.load_txt(file)
-                    
+                text_dic = self.load_txt(file, n)
             # process xlsx or csv files
             else:
-                text_dic = self.load_table(file)
+                text_dic = self.load_table(file, n)
             all_data.extend(text_dic)
         
         # remove files and directory once finished
@@ -487,7 +486,7 @@ class SemanticTagger():
         self.text_df = self.hash_gen(self.text_df)
         
         # clear up all_data
-        all_data = []; zip_files = []
+        all_data = []; files = []
         
         # deduplicate the text_df by text_id
         if deduplication:
@@ -495,14 +494,13 @@ class SemanticTagger():
         
         def clean_text(text):
             '''
-            Function to get spaCy text
+            Function to clean the text
 
             Args:
-                text: the text to be processed by spaCy
+                text: the text to be cleaned
             '''
             # clean empty spaces in the text
-            text = sent_tokenize(text)
-            text = ' '.join(text)
+            text = re.sub(r'\n','', text)
             
             return text
         
@@ -645,7 +643,9 @@ class SemanticTagger():
                             'usas_tags_def': self.usas_tags_def(token)[1],
                             'mwe': self.check_mwe(token),
                             'lemma':token.lemma_,
-                            'sentence':self.highlight_sentence(token)} for token in doc]
+                            'sentence':self.highlight_sentence(token),
+                            'start_index': token._.pymusas_mwe_indexes[0][0],
+                            'end_index': token._.pymusas_mwe_indexes[0][1]} for token in doc]
         else:
             # extract the semantic tag for each token
             tagged_text = [{'text_name':text_name,
@@ -655,7 +655,9 @@ class SemanticTagger():
                             'usas_tags': self.usas_tags_def(token)[0], 
                             'usas_tags_def': self.usas_tags_def(token)[1], 
                             'lemma':token.lemma_,
-                            'sentence':self.highlight_sentence(token)} for token in doc]
+                            'sentence':self.highlight_sentence(token),
+                            'start_index': token._.pymusas_mwe_indexes[0][0],
+                            'end_index': token._.pymusas_mwe_indexes[0][1]} for token in doc]
         
         # convert output into pandas dataframe
         tagged_text_df = pd.DataFrame.from_dict(tagged_text)
@@ -678,12 +680,6 @@ class SemanticTagger():
         for n, doc in enumerate(tqdm(self.nlp.pipe(self.text_df['text'].to_list(),
                                                 n_process=n_process),
                                   total=len(self.text_df))):
-            text_name = self.text_df.text_name[self.text_df.index[n]]
-            text_id = self.text_df.text_id[self.text_df.index[n]]
-            tagged_text = self.add_tagger(text_name, 
-                                          text_id, 
-                                          doc)
-            self.tagged_df = pd.concat([self.tagged_df,tagged_text])
             try:
                 text_name = self.text_df.text_name[self.text_df.index[n]]
                 text_id = self.text_df.text_id[self.text_df.index[n]]
@@ -791,9 +787,9 @@ class SemanticTagger():
                 if inc_usas==('all',) and inc_pos==('all',) and inc_mwe==('all',):
                     # only displays the first n tokens, with n defined by self.token_to_display
                     print('The below table shows the first {} tokens only. Use the above filter to show tokens with specific tags.'.format(self.token_to_display))
-                    df_html = self.df[left_right].head(self.token_to_display).to_html(escape=False)
+                    df_html = self.df[left_right].head(self.token_to_display).iloc[:,:-2].to_html(escape=False)
                 else:
-                    df_html = self.df[left_right].to_html(escape=False)
+                    df_html = self.df[left_right].iloc[:,:-2].to_html(escape=False)
                 
                 # Concatenating to single string
                 df_html = self.style+'<div class="dataframe-div">'+df_html+"\n</div>"
@@ -861,44 +857,6 @@ class SemanticTagger():
         return vbox
         
         
-    def save_tag_text(self, 
-                      start_index: int, 
-                      end_index: int):
-        '''
-        Function to save tagged texts into an excel spreadsheet using text_name as the sheet name
-
-        Args:
-            start_index: the start index of the text to be saved
-            end_index: the end index of the text to be saved
-        '''
-        # define the file_name
-        file_name = 'tagged_text_{}_to_{}.xlsx'.format(start_index, min(end_index,len(self.text_df)))
-        
-        # open an excel workbook
-        wb = Workbook()
-        
-        # empty variables to check duplicate name sheets
-        sheet_names = []; n=0
-        
-        # tag texts and save to new sheets in the excel spreadsheet
-        for text in tqdm(self.text_df[start_index:end_index].itertuples(), total=len(self.text_df[start_index:end_index])):
-            try:
-                tagged_text = self.tagged_df[self.tagged_df['text_id']==text.text_id].iloc[:,2:]
-                sheet_name = text.text_name[:10]
-                if sheet_name in sheet_names:
-                    sheet_name += str(n)
-                    n+=1
-                sheet_names.append(sheet_name)
-                values = [tagged_text.columns] + list(tagged_text.values)
-                wb.new_sheet(sheet_name, data=values)
-            except:
-                print('{} is too large. Consider breaking it down into smaller texts (< 1MB each file).'.format(text.text_name))
-        
-        # save the excel spreadsheet
-        wb.save(file_name)
-        print('Semantic tags successfully added and saved into {}!'.format(file_name))
-    
-    
     def top_entities(self, 
                      count_ent: dict, 
                      top_n: int) -> dict:
@@ -1201,6 +1159,8 @@ class SemanticTagger():
                     print('Analysis saved! Click below to download:')
                     # save the bar charts as jpg files
                     for fig, bar_title in self.figs:
+                        bar_title = ' '.join(bar_title.split('/'))
+                        bar_title = ' '.join(bar_title.split('"'))
                         file_name = '-'.join(bar_title.split()) + '.jpg'
                         fig.savefig(out_dir+file_name, bbox_inches='tight')
                         display(DownloadFileLink(out_dir+file_name, file_name))
@@ -1231,22 +1191,118 @@ class SemanticTagger():
                              layout = widgets.Layout(width='250px', height='250px'))
         
         hbox2 = widgets.HBox([vbox3, vbox4])
-        vbox = widgets.VBox([hbox1, hbox2, save_out, analyse_out, analyse_top_out],
+        
+        vbox = widgets.VBox([hbox1, hbox2, save_out],
                             layout = widgets.Layout(width='500px'))
         
-        return vbox
+        return vbox, analyse_out, analyse_top_out
     
     
     def analyse_two_tags(self):
         '''
         Function to display options for comparing text analysis
         '''
-        vbox1 = self.analyse_tags()
-        vbox2 = self.analyse_tags()
+        vbox1, analyse_out1, analyse_top_out1 = self.analyse_tags()
+        vbox2, analyse_out2, analyse_top_out2 = self.analyse_tags()
         
         hbox = widgets.HBox([vbox1, vbox2])
+        vbox1 = widgets.VBox([analyse_out1, analyse_top_out1])
+        vbox2 = widgets.VBox([analyse_out2, analyse_top_out2])
+        vbox = widgets.VBox([hbox, vbox1, vbox2])
         
-        return hbox
+        return vbox
+    
+    
+    def save_to_csv(self, 
+                    out_dir: str,
+                    file_name: str):
+        '''
+        Function to save tagged texts to csv file
+        
+        Args:
+            out_dir: the output file directory
+            file_name: the name of teh saved file
+        '''
+        # split into chunks
+        chunks = np.array_split(self.tagged_df.index, len(self.text_df)) 
+        
+        # save the tagged text into csv
+        for chunck, subset in enumerate(tqdm(chunks)):
+            if chunck == 0:
+                self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
+                                                  mode='w', 
+                                                  index=True)
+            else:
+                self.tagged_df.loc[subset].to_csv(out_dir+file_name, 
+                                                  header=None, 
+                                                  mode='a', 
+                                                  index=True)
+    
+    
+    def save_to_xml(self, 
+                    out_dir: str,
+                    file_name: str):
+        '''
+        Function to save tagged texts to zip of txt (pseudo-xml) file
+        
+        Args:
+            out_dir: the output file directory
+            file_name: the name of teh saved file
+        '''
+        # create a directory for saving .txt files
+        os.makedirs('./output/saved_files', exist_ok=True)
+        
+        # save tagged texts
+        for text in tqdm(self.tagged_df.text_name.unique()):
+            this_text = []
+            for n, row in enumerate(self.tagged_df[self.tagged_df['text_name']==text].itertuples()):
+                if self.mwe=='yes':
+                    pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}" mwe="{}">{}</w>'.format(n, 
+                                                                                          row.pos, 
+                                                                                          row.usas_tags[0], 
+                                                                                          row.usas_tags_def[0], 
+                                                                                          row.mwe, 
+                                                                                          row.token)
+                else:
+                    pseudo_xml = '<w id="{}" pos="{}" sem="{}/{}">{}</w>'.format(n, 
+                                                                                 row.pos, 
+                                                                                 row.usas_tags[0], 
+                                                                                 row.usas_tags_def[0], 
+                                                                                 row.token)
+                this_text.append(pseudo_xml)
+            with open('./output/saved_files/{}.txt'.format(text), 'w') as f:
+                f.write('\n'.join(this_text))
+        
+        def zipdir(path, ziph):
+            # ziph is zipfile handle
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    ziph.write(os.path.join(root, file), 
+                               os.path.relpath(os.path.join(root, file), 
+                                               os.path.join(path, '..')))
+        
+        with zipfile.ZipFile(out_dir+file_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipdir('./output/saved_files/', zipf)
+
+        # remove files and directory once finished
+        os.system('rm -r ./output/saved_files')
+        
+        
+    def save_to_excel(self, 
+                      out_dir: str,
+                      file_name: str):
+        '''
+        Function to save analysis into an excel spreadsheet and download to local computer
+
+        Args:
+            out_dir: the name of the output directory.
+            file_name: the name of the saved file 
+        '''
+        # save tagged texts onto an Excel spreadsheet
+        values = [self.tagged_df.columns] + list(self.tagged_df.values)
+        wb = Workbook()
+        wb.new_sheet(sheet_name='tagged_texts', data=values)
+        wb.save(out_dir + file_name)
         
     
     def save_options(self):
@@ -1254,40 +1310,11 @@ class SemanticTagger():
         options for saving tagged texts
         '''
         warnings.filterwarnings("ignore")
-        # widget to display instruction
-        enter_text = widgets.HTML(
-            value='<b>Select the tagged texts to save (up to {} texts at a time):</b>'.format(self.max_to_process),
-            placeholder='',
-            description=''
-            )
         
-        # widgets for selecting the number of texts to process in each batch
-        enter_start_n, start_n = self.select_n_widget('Start index:', 0)
-        enter_end_n, end_n = self.select_n_widget('End index:', 50)
-        
-        # the output after clicking the button
-        text_out = widgets.Output()
-        
-        with text_out:
-            batch_size = end_n.value - start_n.value
-            pd.set_option('display.max_rows', self.max_to_process)
-            
-            # display texts to be saved
-            display(self.text_df[start_n.value:end_n.value])
-            
-        # give notification when file is uploaded
-        def _cb(change):
-            with text_out:
-                clear_output()
-                if (end_n.value-start_n.value)>self.max_to_process:
-                    print('You can select only up to 50 texts. Please revise the start/end index.')
-                else:
-                    pd.set_option('display.max_rows', self.max_to_process)
-                    display(self.text_df[start_n.value:end_n.value])
-            
-        # observe when file is uploaded and display output
-        start_n.observe(_cb, names='value')
-        end_n.observe(_cb, names='value')
+        # widget to select save options
+        enter_save, select_save = self.select_options('<b>Select saving file type:</b>',
+                                                      ['excel', 'csv', 'pseudo-XML'],
+                                                      'excel')
         
         # widget to process texts
         process_button, process_out = self.click_button_widget(desc='Save tagged texts', 
@@ -1298,35 +1325,35 @@ class SemanticTagger():
         def on_process_button_clicked(_):
             with process_out:
                 clear_output()
+                save_type = select_save.value
+                out_dir = './output/'
                 
-                if (end_n.value-start_n.value)<=self.max_to_process:
-                    # process selected texts
-                    self.save_tag_text(start_n.value, end_n.value)
-                    print('text index {} to {} have been processed. Click below to download:'.format(start_n.value, end_n.value))
-                    
-                    # download the excel spreadsheet onto your computer
-                    file_name = 'tagged_text_{}_to_{}.xlsx'.format(start_n.value, min(end_n.value,len(self.text_df)))
-                    display(DownloadFileLink(file_name, file_name))
-                    
-                    # change index values to save the next batch
-                    start_n.value = end_n.value+1
-                    end_n.value = min((start_n.value + self.max_to_process),
-                                      (len(self.text_df)-(end_n.value-start_n.value)-1))
+                print('Saving tagged texts in progress. Please be patient...')
+
+                if save_type =='excel':
+                    file_name = 'tagged_texts.xlsx'
+                    self.save_to_excel(out_dir, file_name)
+                elif save_type =='csv':
+                    file_name = 'tagged_texts.csv'
+                    self.save_to_csv(out_dir, file_name)
                 else:
-                    print('You can select only up to {} texts. Please revise the start/end index.'.format(self.max_to_process))
+                    file_name = 'tagged_texts.zip'
+                    self.save_to_xml(out_dir, file_name)
+                    
+                # download the saved file onto your computer
+                print('Tagged texts saved. Click below to download:')
+                display(DownloadFileLink(out_dir+file_name, file_name))
                     
         # link the top_button with the function
         process_button.on_click(on_process_button_clicked)
         
         # displaying inputs, buttons and their outputs
-        vbox1 = widgets.VBox([enter_text, 
-                              enter_start_n, start_n,
-                              enter_end_n, end_n], 
-                             layout = widgets.Layout(width='600px', height='170px'))
+        vbox1 = widgets.VBox([enter_save, select_save], 
+                             layout = widgets.Layout(width='600px', height='80px'))
         vbox2 = widgets.VBox([process_button, process_out],
-                             layout = widgets.Layout(width='600px'))#, height='80px'))
+                             layout = widgets.Layout(width='600px'))
         
-        vbox = widgets.VBox([vbox1, vbox2, text_out])
+        vbox = widgets.VBox([vbox1, vbox2])
         
         return vbox
     
@@ -1426,7 +1453,8 @@ class SemanticTagger():
         
     def select_n_widget(self, 
                         instruction: str, 
-                        value: int):
+                        value: int,
+                        max_v: int=1e+3):
         '''
         Create widgets for selecting the number of entities to display
         
@@ -1445,7 +1473,7 @@ class SemanticTagger():
         n_option = widgets.BoundedIntText(
             value=value,
             min=0,
-            max=len(self.text_df)+1,
+            max=max_v,
             step=5,
             description='',
             disabled=False,
