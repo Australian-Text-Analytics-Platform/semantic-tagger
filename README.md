@@ -9,7 +9,7 @@ This tool has been designed for use with minimal setup from users. You are able 
 
 [![Binder](https://binderhub.atap-binder.cloud.edu.au/badge_logo.svg)](https://binderhub.atap-binder.cloud.edu.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)    
 
-<b>Note:</b> CILogon authentication is required. You can use your institutional, Google or Microsoft account to login.  
+<b>Note:</b> CILogon authentication is required. You can use your institutional, Google or Microsoft account to login. If you have trouble authenticating, please refer to the [CILogon troubleshooting guide](documents/cilogon-troubleshooting.pdf).
 
 If you do not have access to any of the above accounts, you can use the below link to access the tool (this is a free Binder version, limited to 2GB memory only).  
 
