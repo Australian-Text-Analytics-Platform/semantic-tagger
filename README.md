@@ -4,6 +4,10 @@
 
 In addition to the USAS tags, you will also see the lemmas and Part-of-Speech (POS) tags in the text. For these languages, the tagger can also identify and tag Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'Países Bajos'.
 
+### Semantic Tagger User Guide
+
+For instructions on how to use the Semantic Tagger, please refer to the [Semantic Tagger User Guide](documents/semtag_help_pages.pdf).
+
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
 
