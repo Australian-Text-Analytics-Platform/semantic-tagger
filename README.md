@@ -11,7 +11,7 @@ For instructions on how to use the Semantic Tagger, please refer to the [Semanti
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
 
-[![Binder](https://binderhub.rc.nectar.org.au/badge_logo.svg)](https://binderhub.rc.nectar.org.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger.ipynb)    
+[![Binder](https://binderhub.rc.nectar.org.au/badge_logo.svg)](https://binderhub.rc.nectar.org.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/multi-lingual?labpath=semantic_tagger.ipynb)    
 
 <b>Note:</b> Note: Australian Access Federation (AAF) or Reannz Tuakiri (NZ) authentication is required.
 If you do not have access to AAF or NZ, you can use the below link to access the tool (this is a free Binder version, limited to 2GB memory only).  
