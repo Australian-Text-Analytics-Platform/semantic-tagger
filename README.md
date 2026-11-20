@@ -1,5 +1,14 @@
 # Semantic-Tagger (English)
 
+> [!WARNING]
+> **This tool is archived and no longer supported or maintained.**
+> It was developed by the Australian Text Analytics Platform (ATAP), the previous phase of the
+> Language Data Commons of Australia (LDaCA). It is preserved as a frozen Docker image so that it
+> keeps launching on BinderHub as it last worked, but it will not be updated or fixed.
+> For current LDaCA text analytics tools, please use
+> [Wordflow](https://australian-text-analytics-platform.github.io/LDaCa_Text_Analytics_Tools/) and
+> [LADAL](https://ladal.edu.au).
+
 <b>Abstract:</b> with the Semantic Tagger, you can use [Python Multilingual Ucrel Semantic Analysis System (PyMUSAS)](https://ucrel.github.io/pymusas/) to tag your text so you can extract token level semantic tags from the tagged text. PyMUSAS, is a rule based token and Multi Word Expression (MWE) semantic tagger. The tagger can support any semantic tagset, however the currently released tagset is for the [UCREL Semantic Analysis System (USAS)](https://ucrel.lancs.ac.uk/usas/) semantic tags. 
 
 In addition to the USAS tags, you will also see the lemmas and Part-of-Speech (POS) tags in the text. For English, the tagger also identifies and tags Multi Word Expressions (MWE), i.e., expressions formed by two or more words that behave like a unit such as 'South Australia'.
@@ -12,12 +21,12 @@ For instructions on how to use the Semantic Tagger, please refer to the [Semanti
 ## Setup
 This tool has been designed for use with minimal setup from users. You are able to run it in the cloud and any dependencies with other packages will be installed for you automatically. In order to launch and use the tool, you just need to click the below icon.
 
-[![Binder](https://binderhub.rc.nectar.org.au/badge_logo.svg)](https://binderhub.rc.nectar.org.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)
+[![Binder](https://binderhub.rc.nectar.org.au/badge_logo.svg)](https://binderhub.rc.nectar.org.au/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/archived?labpath=semantic_tagger_en.ipynb)
 
 <b>Note:</b> Australian Access Federation (AAF) or Reannz Tuakiri (NZ) authentication is required.
 If you do not have access to AAF or NZ, you can use the below link to access the tool (this is a free Binder version, limited to 2GB memory only).
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/main?labpath=semantic_tagger_en.ipynb)  
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Australian-Text-Analytics-Platform/semantic-tagger/archived?labpath=semantic_tagger_en.ipynb)  
 
 It may take a few minutes for Binder to launch the notebook and install the dependencies for the tool. Please be patient.  
 
@@ -61,3 +70,15 @@ This code has been adapted from the [PyMUSAS GitHub page](https://github.com/UCR
 If you find the Semantic Tagger useful in your research, please cite the following:
 
 Jufri, Sony & Sun, Chao (2022). Semantic Tagger. v1.0. Australian Text Analytics Platform. Software. https://github.com/Australian-Text-Analytics-Platform/semantic-tagger
+
+## Run locally with Docker
+
+The frozen environment of this tool is published as the Docker image
+[`milysun/atap-semantic-tagger`](https://hub.docker.com/r/milysun/atap-semantic-tagger). With [Docker](https://docs.docker.com/get-docker/) installed, run:
+
+```bash
+docker run --rm -p 8888:8888 milysun/atap-semantic-tagger:5b253e0f196c jupyter lab --ip=0.0.0.0 --port=8888
+```
+
+then open the `http://127.0.0.1:8888/lab?token=...` link printed in the terminal.
+On Apple Silicon Macs add `--platform linux/amd64` after `docker run`.
