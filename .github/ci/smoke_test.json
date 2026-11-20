@@ -1,0 +1,5 @@
+{
+  "notebooks": [
+    {"path": "semantic_tagger_en.ipynb", "must_pass_cells": 3, "timeout": 1800}
+  ]
+}
